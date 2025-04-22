@@ -33,6 +33,7 @@ func _on_lobby_created(connect: int, lobby_id: int) -> void:
 		lobby_name = "%s's lobby" % active_member.name
 		Steam.setLobbyData(id, "name", lobby_name)
 		refresh_members()
+		print("lobby id ", lobby_id)
 
 func join_lobby(lobby_id: int) -> void:
 	Steam.joinLobby(lobby_id)
@@ -50,6 +51,7 @@ func refresh_members() -> void:
 		var user_id: int = Steam.getLobbyMemberByIndex(id, member_index)
 		var username: String = Steam.getFriendPersonaName(user_id)
 		members.append(SteamUser.new(user_id, username))
+		print("username ", username)
 
 func _on_p2p_session_request(user_id: int):
 	var requester: String = Steam.getFriendPersonaName(user_id)

@@ -1,3 +1,4 @@
+extends Node
 var app_id: String = "480"
 var is_host: bool = false
 var user: SteamUser
@@ -11,6 +12,8 @@ func _ready() -> void:
 	var user_id: int = Steam.getSteamID()
 	var username: String = Steam.getPersonaName()
 	user = SteamUser.new(user_id, username)
+	var steam_lobby: SteamLobby = SteamLobby.new(user)
+	add_child(steam_lobby)
 
 func _process(_delta: float) -> void:
 	Steam.run_callbacks()
