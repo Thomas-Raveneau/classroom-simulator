@@ -1,0 +1,72 @@
+[gd_scene load_steps=11 format=3 uid="uid://sh07mxo33ehw"]
+
+[ext_resource type="Script" uid="uid://d1bqo2oldhty4" path="res://scenes/gameplay/player/player.gd" id="1_lcm6i"]
+[ext_resource type="PackedScene" uid="uid://q7j18hl5bwvi" path="res://scenes/gameplay/objects/bucket/bucket.tscn" id="2_qgw2i"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_dqp82"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_dqp82"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_dqp82"]
+albedo_color = Color(0.452354, 0.225493, 0.130514, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_stg5g"]
+albedo_color = Color(0.222979, 0.327174, 0.36542, 1)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_dqp82"]
+material = SubResource("StandardMaterial3D_stg5g")
+top_radius = 0.05
+bottom_radius = 0.1
+height = 0.2
+
+[sub_resource type="SphereMesh" id="SphereMesh_stg5g"]
+radius = 0.075
+height = 0.15
+rings = 6
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_td0aw"]
+albedo_color = Color(0.223529, 0.32549, 0.364706, 1)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_jfxee"]
+albedo_color = Color(0.223529, 0.32549, 0.364706, 1)
+
+[node name="Player" type="CharacterBody3D"]
+script = ExtResource("1_lcm6i")
+
+[node name="Collision" type="CollisionShape3D" parent="."]
+shape = SubResource("CapsuleShape3D_dqp82")
+
+[node name="Meshes" type="Node3D" parent="Collision"]
+
+[node name="Body" type="MeshInstance3D" parent="Collision/Meshes"]
+gi_mode = 2
+mesh = SubResource("CapsuleMesh_dqp82")
+skeleton = NodePath("../../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_dqp82")
+
+[node name="Nose" type="MeshInstance3D" parent="Collision/Meshes/Body"]
+transform = Transform3D(1.91069e-15, -4.37114e-08, -1, -1, -4.37114e-08, 0, -4.37114e-08, 1, -4.37114e-08, 0, 0.293, 0.581055)
+gi_mode = 2
+mesh = SubResource("CylinderMesh_dqp82")
+skeleton = NodePath("../..")
+
+[node name="Eye_L" type="MeshInstance3D" parent="Collision/Meshes/Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.18, 0.5, 0.454)
+gi_mode = 2
+mesh = SubResource("SphereMesh_stg5g")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_td0aw")
+
+[node name="Eye_R" type="MeshInstance3D" parent="Collision/Meshes/Body"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.18, 0.5, 0.454)
+gi_mode = 2
+mesh = SubResource("SphereMesh_stg5g")
+skeleton = NodePath("../..")
+surface_material_override/0 = SubResource("StandardMaterial3D_jfxee")
+
+[node name="Bucket" parent="Collision/Meshes" instance=ExtResource("2_qgw2i")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.749962, 0, 0)
+
+[node name="Camera" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.562964, 0.826482, 0, -0.826482, 0.562964, 0, 5.01872, 2.99017)
+fov = 95.625
