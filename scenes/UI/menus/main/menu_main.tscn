@@ -1,0 +1,44 @@
+[gd_scene load_steps=2 format=3 uid="uid://6q5w848c8jwh"]
+
+[ext_resource type="Script" uid="uid://cyg1lfxwprsee" path="res://scenes/UI/menus/main/menu_main.gd" id="1_awuc3"]
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_awuc3")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 13
+anchor_left = 0.5
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -10.0
+offset_right = 10.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="CreateLobbyButton" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Create lobby"
+
+[node name="JoinLobbyButton" type="Button" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+text = "Join lobby"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "Quit"
+
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/CreateLobbyButton" to="." method="_on_create_lobby_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/HBoxContainer/JoinLobbyButton" to="." method="_on_join_lobby_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/QuitButton" to="." method="_on_quit_button_pressed"]

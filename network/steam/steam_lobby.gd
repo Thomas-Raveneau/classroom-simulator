@@ -1,6 +1,9 @@
 class_name SteamLobby
 extends Node
 
+signal created
+signal members_refreshed
+
 var id: int = 0
 var lobby_name: String = ""
 var local_member: SteamUser
@@ -17,21 +20,9 @@ func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite)
 	Steam.lobby_chat_update.connect(_on_update)
 	auto_join()
-	create()
 
 func _exit_tree():
 	leave()
-
-func debug_invite() -> void:
-	var friends: Array[SteamUser] = local_member.get_friends()
-	var dev_account: SteamUser = friends.filter(
-		func (friend):
-			return friend.name == "traveneau.dev"
-	).front()
-	if !dev_account:
-		print("Dev account not online")
-	else:
-		invite(dev_account)
 
 func create() -> void:
 	if id == 0:
@@ -75,6 +66,8 @@ func refresh_members() -> void:
 		var user_id: int = Steam.getLobbyMemberByIndex(id, member_index)
 		var username: String = Steam.getFriendPersonaName(user_id)
 		members.append(SteamUser.new(user_id, username))
+	members_refreshed.emit()
+	print("lobby members", members)
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	if lobby_connect != 1:
@@ -85,7 +78,7 @@ func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	lobby_name = "%s's lobby" % local_member.name
 	Steam.setLobbyData(id, "name", lobby_name)
 	refresh_members()
-	#debug_invite()
+	created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS: 

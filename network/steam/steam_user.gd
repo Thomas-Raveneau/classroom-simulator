@@ -32,7 +32,7 @@ func _init(_id: int, _name: String, _is_host: bool = false) -> void:
 	status = Steam.getFriendPersonaState(id) as Status
 
 func _to_string() -> String:
-	return str({"id": id, "name": name, "status": status})
+	return str({ "id": id, "name": name, "status": status })
 
 func get_friends(
 	status_filters: Array[Status] = [Status.ONLINE, Status.LOOKING_TO_PLAY],

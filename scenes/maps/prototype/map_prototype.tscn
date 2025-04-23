@@ -1,6 +1,5 @@
-[gd_scene load_steps=7 format=3 uid="uid://bjlbml75quh0q"]
+[gd_scene load_steps=6 format=3 uid="uid://bjlbml75quh0q"]
 
-[ext_resource type="Script" uid="uid://hw5yutd33ml3" path="res://network/steam/steam.gd" id="1_g3gij"]
 [ext_resource type="MeshLibrary" uid="uid://bdsrytkfmcwbg" path="res://scenes/maps/prototype/mesh_library/prototype_mesh_library.tres" id="1_ouhv6"]
 [ext_resource type="PackedScene" uid="uid://sh07mxo33ehw" path="res://scenes/gameplay/characters/player/player.tscn" id="2_q7rny"]
 
@@ -22,9 +21,6 @@ sdfgi_enabled = true
 glow_enabled = true
 
 [node name="MapPrototype" type="Node3D"]
-
-[node name="Steam" type="Node" parent="."]
-script = ExtResource("1_g3gij")
 
 [node name="Rendering" type="Node" parent="."]
 

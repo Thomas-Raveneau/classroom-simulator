@@ -1,0 +1,24 @@
+[gd_scene load_steps=2 format=3 uid="uid://kik1af25yqj4"]
+
+[ext_resource type="Script" uid="uid://bmoifedb0b6ag" path="res://scenes/UI/menus/main/components/friend_invite.gd" id="1_qvv3m"]
+
+[node name="FriendInvite" type="HBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_qvv3m")
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Name"
+
+[node name="InviteButton" type="Button" parent="."]
+layout_mode = 2
+size_flags_horizontal = 10
+size_flags_vertical = 4
+text = "Invite"
+
+[connection signal="pressed" from="InviteButton" to="." method="_on_invite_button_pressed"]
