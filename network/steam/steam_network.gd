@@ -27,7 +27,7 @@ func send_p2p_packet(data: Dictionary, target: SteamUser = null, type: SEND_TYPE
 	var packed_data: PackedByteArray = var_to_bytes(data)
 	if target == null: # send to everyone
 		for member in lobby.members:
-			if member.id == lobby.active_member.id:
+			if member.id == lobby.local_member.id:
 				continue
 			Steam.sendP2PPacket(member.id, packed_data, type, channel)
 	else:
@@ -48,7 +48,6 @@ func read_p2p_packet() -> void:
 		return
 	var packet: Dictionary = Steam.readP2PPacket(available_packet_size, channel)
 	var data: Dictionary = bytes_to_var(packet.get("data"))
-	print(data)
 	var message: String = data.get("message")
 	if message:
 		match message:
@@ -56,5 +55,4 @@ func read_p2p_packet() -> void:
 				lobby.refresh_members()
 
 func _on_p2p_session_request(user_id: int):
-	var requester: String = Steam.getFriendPersonaName(user_id)
 	Steam.acceptP2PSessionWithUser(user_id)
