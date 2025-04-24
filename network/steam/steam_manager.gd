@@ -16,6 +16,7 @@ func _ready() -> void:
 	if !init_success || !Steam.isSubscribed():
 		get_tree().quit()
 	user = SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
+	user.refresh_friends()
 	lobby = SteamLobby.new(user)
 	network = SteamNetwork.new(lobby)
 	lobby.network = network
@@ -24,6 +25,9 @@ func _ready() -> void:
 
 func _process(_delta: float) -> void:
 	Steam.run_callbacks()
+
+func _exit_tree():
+	lobby.leave()
 
 func is_steam_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()

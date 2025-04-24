@@ -54,5 +54,13 @@ func read_p2p_packet() -> void:
 			"LOBBY_USER_JOINED":
 				lobby.refresh_members()
 
+func close_connection(user: SteamUser) -> void:
+	if user.id == SteamManager.user.id:
+		return
+	var session_state: Dictionary = Steam.getP2PSessionState(user.id)
+	if !session_state.has("connection_active") || !session_state["connection_active"]:
+		return
+	Steam.closeP2PSessionWithUser(user.id)
+
 func _on_p2p_session_request(user_id: int):
 	Steam.acceptP2PSessionWithUser(user_id)

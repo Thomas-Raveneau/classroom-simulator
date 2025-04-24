@@ -6,7 +6,7 @@ var friend: SteamUser
 
 func _ready() -> void:
 	if !friend:
-		return
+		queue_free()
 	name_label.text = friend.name
 
 func _on_invite_button_pressed() -> void:

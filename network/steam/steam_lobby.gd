@@ -1,8 +1,8 @@
 class_name SteamLobby
 extends Node
 
-signal created
-signal members_refreshed
+signal on_created
+signal on_members_refreshed
 
 var id: int = 0
 var lobby_name: String = ""
@@ -20,9 +20,6 @@ func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite)
 	Steam.lobby_chat_update.connect(_on_update)
 	auto_join()
-
-func _exit_tree():
-	leave()
 
 func create() -> void:
 	if id == 0:
@@ -45,12 +42,7 @@ func leave() -> void:
 		return
 	Steam.leaveLobby(id)
 	for member in members:
-		if member.id == local_member.id:
-			continue
-		var session_state: Dictionary = Steam.getP2PSessionState(member.id)
-		if !session_state.has("connection_active") || !session_state["connection_active"]:
-			continue
-		Steam.closeP2PSessionWithUser(member.id)
+		network.close_connection(member)
 	id = 0
 	members.clear()
 
@@ -65,9 +57,9 @@ func refresh_members() -> void:
 	for member_index in range(0, members_count):
 		var user_id: int = Steam.getLobbyMemberByIndex(id, member_index)
 		var username: String = Steam.getFriendPersonaName(user_id)
+		var game_info: Dictionary = Steam.getFriendGamePlayed(user_id) 
 		members.append(SteamUser.new(user_id, username))
-	members_refreshed.emit()
-	print("lobby members", members)
+	on_members_refreshed.emit()
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	if lobby_connect != 1:
@@ -78,7 +70,7 @@ func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	lobby_name = "%s's lobby" % local_member.name
 	Steam.setLobbyData(id, "name", lobby_name)
 	refresh_members()
-	created.emit()
+	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS: 

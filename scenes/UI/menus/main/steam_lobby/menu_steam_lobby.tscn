@@ -1,8 +1,8 @@
 [gd_scene load_steps=2 format=3 uid="uid://8pg7m4kjpmo4"]
 
-[ext_resource type="Script" uid="uid://ng8agsvwt3qy" path="res://scenes/UI/menus/main/menu_steam_lobby.gd" id="1_xf7c5"]
+[ext_resource type="Script" uid="uid://ng8agsvwt3qy" path="res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.gd" id="1_xf7c5"]
 
-[node name="SteamLobby" type="Control"]
+[node name="MenuSteamLobby" type="Control"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -34,21 +34,6 @@ offset_bottom = 20.0
 grow_horizontal = 0
 grow_vertical = 2
 
-[node name="RefreshFriendsButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -143.0
-offset_top = -48.0
-offset_right = -17.0
-offset_bottom = -17.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "Refresh friends"
-
 [node name="BackButton" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 2
@@ -61,5 +46,4 @@ offset_bottom = -17.0
 grow_vertical = 0
 text = "Back"
 
-[connection signal="pressed" from="RefreshFriendsButton" to="." method="_on_refresh_friends_button_pressed"]
 [connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
