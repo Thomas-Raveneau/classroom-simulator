@@ -39,10 +39,11 @@ func leave() -> void:
 	if id == 0:
 		return
 	if SteamManager.user.is_host && members.size() > 1:
-		var new_host: SteamUser = members[members.find(
+		var new_host_index: int = members.find_custom(
 			func (member):
 				return member.id != SteamManager.user.id
-		)]
+		)
+		var new_host: SteamUser = members[new_host_index]
 		Steam.setLobbyOwner(id, new_host.id)
 	Steam.leaveLobby(id)
 	for member in members:
