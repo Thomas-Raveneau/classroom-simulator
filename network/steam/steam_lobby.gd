@@ -65,14 +65,13 @@ func invite(user: SteamUser) -> void:
 
 func refresh_members() -> void:
 	members.clear()
+	var host_id: int = Steam.getLobbyOwner(id)
 	var members_count: int = Steam.getNumLobbyMembers(id)
 	for member_index in range(0, members_count):
-		var user_id: int = Steam.getLobbyMemberByIndex(id, member_index)
-		var username: String = Steam.getFriendPersonaName(user_id)
-		if user_id == SteamManager.user.id:
-			members.append(SteamManager.user)
-		else:
-			members.append(SteamUser.new(user_id, username))
+		var member_id: int = Steam.getLobbyMemberByIndex(id, member_index)
+		var member_name: String = Steam.getFriendPersonaName(member_id)
+		var member = SteamUser.new(member_id, member_name, null, member_id == host_id)
+		members.append(member)
 	on_members_refreshed.emit()
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
@@ -109,6 +108,7 @@ func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	if !success:
 		return
 	var owner_id: int = Steam.getLobbyOwner(id)
-	if owner_id == SteamManager.user.id:
+	if owner_id == SteamManager.user.id && !SteamManager.user.is_host:
 		SteamManager.user.is_host = true
+		return
 	refresh_members()
