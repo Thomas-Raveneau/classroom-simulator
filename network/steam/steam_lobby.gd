@@ -2,6 +2,7 @@ class_name SteamLobby
 extends Node
 
 signal on_created
+signal on_lobby_joined
 signal on_members_refreshed
 
 var id: int = 0
@@ -91,6 +92,7 @@ func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) 
 		return
 	id = lobby_id
 	refresh_members()
+	on_lobby_joined.emit()
 
 func _on_invite(_user_id: int, lobby_id: int, _game_id: int) -> void:
 	join(lobby_id)

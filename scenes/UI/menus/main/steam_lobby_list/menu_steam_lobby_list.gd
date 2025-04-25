@@ -9,6 +9,7 @@ const friend_lobby_component: PackedScene = preload(
 func _ready() -> void:
 	SteamManager.user.on_friends_refreshed.connect(refresh_friends_lobbies)
 	SteamManager.user.on_friend_lobby_update.connect(refresh_friends_lobbies)
+	SteamManager.lobby.on_lobby_joined.connect(_on_lobby_joined)
 	refresh_friends_lobbies()
 
 func refresh_friends_lobbies() -> void:
@@ -21,6 +22,11 @@ func refresh_friends_lobbies() -> void:
 		var friend_lobby_instance = friend_lobby_component.instantiate()
 		friend_lobby_instance.friend_lobby = friend_lobby
 		lobbies_container.add_child(friend_lobby_instance)
+
+func _on_lobby_joined():
+	get_tree().change_scene_to_file(
+		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn"
+	)
 
 func _on_back_button_pressed() -> void:
 	get_tree().change_scene_to_file("res://scenes/UI/menus/main/menu_main.tscn")

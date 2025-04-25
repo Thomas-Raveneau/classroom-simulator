@@ -11,6 +11,3 @@ func _ready() -> void:
 
 func _on_join_button_pressed() -> void:
 	SteamManager.lobby.join(friend_lobby.id)
-	get_tree().change_scene_to_file(
-		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn"
-	)
