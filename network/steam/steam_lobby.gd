@@ -110,5 +110,8 @@ func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	var owner_id: int = Steam.getLobbyOwner(id)
 	if owner_id == SteamManager.user.id && !SteamManager.user.is_host:
 		SteamManager.user.is_host = true
+		lobby_name = "%s's lobby" % SteamManager.user.name
+		Steam.setLobbyData(id, "name", lobby_name)
 		return
+	lobby_name = Steam.getLobbyData(id, "name")
 	refresh_members()
