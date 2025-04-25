@@ -22,9 +22,18 @@ func _ready() -> void:
 	auto_join()
 
 func create() -> void:
-	if id == 0:
-		local_member.is_host = true
-		Steam.createLobby(Steam.LOBBY_TYPE_PRIVATE, max_members)
+	if id != 0:
+		return
+	local_member.is_host = true
+	Steam.createLobby(Steam.LOBBY_TYPE_FRIENDS_ONLY, max_members)
+
+func set_private(private: bool) -> void:
+	if !SteamManager.user.is_host:
+		return
+	if private:
+		Steam.setLobbyType(id, Steam.LOBBY_TYPE_PRIVATE)
+	else:
+		Steam.setLobbyType(id, Steam.LOBBY_TYPE_FRIENDS_ONLY)
 
 func join(lobby_id: int) -> void:
 	Steam.joinLobby(lobby_id)

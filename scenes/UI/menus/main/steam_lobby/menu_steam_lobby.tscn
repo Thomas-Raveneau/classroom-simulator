@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://8pg7m4kjpmo4"]
+[gd_scene load_steps=3 format=3 uid="uid://8pg7m4kjpmo4"]
 
 [ext_resource type="Script" uid="uid://ng8agsvwt3qy" path="res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.gd" id="1_xf7c5"]
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_ah7qh"]
 
 [node name="MenuSteamLobby" type="Control"]
 layout_mode = 3
@@ -9,6 +11,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+pivot_offset = Vector2(0.99, 0)
 script = ExtResource("1_xf7c5")
 
 [node name="PlayersContainer" type="VBoxContainer" parent="."]
@@ -46,4 +49,24 @@ offset_bottom = -17.0
 grow_vertical = 0
 text = "Back"
 
+[node name="PrivateButton" type="CheckButton" parent="."]
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -171.5
+offset_top = -48.0
+offset_right = 86.87
+offset_bottom = -17.0
+grow_horizontal = 2
+grow_vertical = 0
+focus_mode = 0
+theme_override_styles/focus = SubResource("StyleBoxEmpty_ah7qh")
+text = "Friends only"
+flat = true
+alignment = 2
+
 [connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="toggled" from="PrivateButton" to="." method="_on_private_button_toggled"]

@@ -73,7 +73,14 @@ func format_friend(friend: Dictionary, game_info: Dictionary) -> SteamUser:
 
 func refresh_friends(
 	is_playing_filter: bool = true,
-	status_filters: Array[Status] = [Status.ONLINE, Status.LOOKING_TO_PLAY],
+	status_filters: Array[Status] = [
+		Status.ONLINE, 
+		Status.BUSY,
+		Status.AWAY_LONG,
+		Status.TRADING,
+		Status.SNOOZE,
+		Status.LOOKING_TO_PLAY,
+	],
 	relationship_filters: Array[Relationship] = [Relationship.FRIEND]
 ) -> void:
 	var new_friends: Array[SteamUser] = []
@@ -106,7 +113,7 @@ func get_friends_lobbies() -> Array[SteamFriendLobby]:
 func _on_friend_update(_user_id: int, _flag: Steam.PersonaChange) -> void:
 	refresh_friends()
 
-func _on_friend_lobby_update(success: int, lobby_id: int, user_id: int) -> void:
+func _on_friend_lobby_update(success: int, lobby_id: int, _user_id: int) -> void:
 	if !success:
 		return
 	var friend_lobby_name: String = Steam.getLobbyData(lobby_id, "name")
