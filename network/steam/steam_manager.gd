@@ -17,7 +17,7 @@ func _ready() -> void:
 		get_tree().quit()
 	user = SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
 	user.refresh_friends()
-	lobby = SteamLobby.new(user)
+	lobby = SteamLobby.new()
 	network = SteamNetwork.new(lobby)
 	lobby.network = network
 	add_child(lobby)

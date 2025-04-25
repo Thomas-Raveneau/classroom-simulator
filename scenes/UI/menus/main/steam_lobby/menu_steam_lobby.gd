@@ -3,9 +3,12 @@ extends Control
 const friend_invite_component: PackedScene = preload(
 	"res://scenes/UI/menus/main/steam_lobby/components/ui_friend_invite.tscn"
 )
+const lobby_member_component = preload(
+	"res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_member.tscn"
+)
 
 @onready var friends_container: VBoxContainer = $FriendsContainer
-@onready var players_container: VBoxContainer = $PlayersContainer
+@onready var members_container: VBoxContainer = $MembersContainer
 @onready var private_button: Button = $PrivateButton
 
 func _ready() -> void:
@@ -17,12 +20,12 @@ func _ready() -> void:
 	refresh_members()
 
 func refresh_members() -> void:
-	for child: Label in players_container.get_children():
+	for child: Node in members_container.get_children():
 		child.queue_free()
 	for member: SteamUser in SteamManager.lobby.members:
-		var player_label: Label = Label.new()
-		player_label.text = member.name
-		players_container.add_child(player_label)
+		var lobby_member_instance = lobby_member_component.instantiate()
+		lobby_member_instance.member = member
+		members_container.add_child(lobby_member_instance)
 	refresh_friends()
 
 func refresh_friends() -> void:
