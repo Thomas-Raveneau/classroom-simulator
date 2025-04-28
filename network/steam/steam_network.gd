@@ -60,7 +60,7 @@ func read_messages() -> void:
 		var _sender_id: int = message.identity
 		match payload.command:
 			"START_GAME":
-				print("GAME IS STARTING")
+				MultiplayerManager.
 
 func close_session(user: SteamUser) -> void:
 	if user.id == SteamManager.user.id:

@@ -17,7 +17,9 @@ config/icon="res://icon.svg"
 
 [autoload]
 
+GameSettings="*res://config/game_settings.gd"
 SteamManager="*res://network/steam/steam_manager.gd"
+MultiplayerManager="*res://network/multiplayer/multiplayer_manager.gd"
 
 [input]
 

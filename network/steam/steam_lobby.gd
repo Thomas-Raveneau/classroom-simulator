@@ -9,7 +9,6 @@ signal on_invite(user: SteamUser, lobby_id: int)
 var id: int = 0
 var lobby_name: String = ""
 var members: Array[SteamUser] = []
-var max_members: int = 10
 
 func _ready() -> void:
 	Steam.lobby_created.connect(_on_created)
@@ -23,7 +22,7 @@ func create() -> void:
 	if id != 0:
 		return
 	SteamManager.user.is_host = true
-	Steam.createLobby(Steam.LOBBY_TYPE_FRIENDS_ONLY, max_members)
+	Steam.createLobby(Steam.LOBBY_TYPE_FRIENDS_ONLY, GameSettings.MAX_PLAYERS)
 
 func join(lobby_id: int) -> void:
 	Steam.joinLobby(lobby_id)
@@ -75,14 +74,6 @@ func refresh_members() -> void:
 		var member = SteamUser.new(member_id, member_name, null, member_id == host_id)
 		members.append(member)
 	on_members_refreshed.emit()
-
-func start_game() -> void:
-	if !SteamManager.user.is_host:
-		return
-	var message: Dictionary = {
-		"command" = "START_GAME"
-	}
-	SteamManager.network.send_message(message)
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	if lobby_connect != 1:
