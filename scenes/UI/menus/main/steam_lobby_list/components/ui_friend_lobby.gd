@@ -7,6 +7,7 @@ var friend_lobby: SteamFriendLobby
 func _ready() -> void:
 	if !friend_lobby:
 		queue_free()
+		return
 	name_label.text = friend_lobby.name
 
 func _on_join_button_pressed() -> void:

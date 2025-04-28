@@ -66,7 +66,7 @@ func close_session(user: SteamUser) -> void:
 	if user.id == SteamManager.user.id:
 		return
 	var session: Dictionary = Steam.getSessionConnectionInfo(user.id, false, false)
-	if !session || !session.state || !session.state == session_state.CONNECTED:
+	if !session || !session.connection_state || !session.connection_state == session_state.CONNECTED:
 		return
 	Steam.closeSessionWithUser(user.id)
 

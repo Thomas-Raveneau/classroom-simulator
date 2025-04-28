@@ -4,6 +4,7 @@ extends Node
 signal on_created
 signal on_lobby_joined
 signal on_members_refreshed
+signal on_invite(user: SteamUser, lobby_id: int)
 
 var id: int = 0
 var lobby_name: String = ""
@@ -101,8 +102,9 @@ func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) 
 	refresh_members()
 	on_lobby_joined.emit()
 
-func _on_invite(_user_id: int, lobby_id: int, _game_id: int) -> void:
-	join(lobby_id)
+func _on_invite(user_id: int, lobby_id: int, _game_id: int) -> void:
+	var user: SteamUser = SteamUser.new(user_id)
+	on_invite.emit(user, lobby_id)
 
 func _on_member_update(_lobby_id: int, _user_id: int, _making_change_id: int, status: int) -> void:
 	const lobby_updated_status: Array = [

@@ -3,7 +3,7 @@ extends Control
 const friend_invite_component: PackedScene = preload(
 	"res://scenes/UI/menus/main/steam_lobby/components/ui_friend_invite.tscn"
 )
-const lobby_member_component = preload(
+const lobby_member_component: PackedScene = preload(
 	"res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_member.tscn"
 )
 

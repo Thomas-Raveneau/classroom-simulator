@@ -32,7 +32,7 @@ var friends: Array[SteamUser] = []
 
 func _init(
 	_id: int, 
-	_name: String, 
+	_name: String = "", 
 	_lobby: SteamFriendLobby = null, 
 	_is_host: bool = false
 ) -> void:
@@ -40,6 +40,8 @@ func _init(
 	name = _name
 	is_host = _is_host
 	lobby = _lobby
+	if name.is_empty():
+		name = Steam.getFriendPersonaName(id)
 	status = Steam.getFriendPersonaState(id) as Status
 	Steam.persona_state_change.connect(_on_friend_update)
 	Steam.lobby_data_update.connect(_on_friend_lobby_update)

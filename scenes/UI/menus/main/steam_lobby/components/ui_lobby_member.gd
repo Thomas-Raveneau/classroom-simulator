@@ -8,6 +8,7 @@ var member: SteamUser
 func _ready() -> void:
 	if !member:
 		queue_free()
+		return
 	name_label.text = member.name
 	if !member.is_host:
 		host_icon.hide()

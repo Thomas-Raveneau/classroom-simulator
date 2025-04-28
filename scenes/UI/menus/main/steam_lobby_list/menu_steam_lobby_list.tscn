@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3 uid="uid://bvqp85eo7ouxu"]
+[gd_scene load_steps=3 format=3 uid="uid://bvqp85eo7ouxu"]
 
 [ext_resource type="Script" uid="uid://crluc1e6onflm" path="res://scenes/UI/menus/main/steam_lobby_list/menu_steam_lobby_list.gd" id="1_dcrym"]
+[ext_resource type="PackedScene" uid="uid://cql6ddnt0hedt" path="res://scenes/UI/menus/main/steam_invite_list/steam_invite_list.tscn" id="2_vx6qq"]
 
 [node name="MenuSteamLobbyList" type="Control"]
 layout_mode = 3
@@ -10,6 +11,14 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_dcrym")
+
+[node name="SteamInviteList" parent="." instance=ExtResource("2_vx6qq")]
+layout_mode = 0
+anchors_preset = 0
+anchor_right = 0.0
+anchor_bottom = 0.0
+grow_horizontal = 1
+grow_vertical = 1
 
 [node name="LobbiesContainer" type="VBoxContainer" parent="."]
 layout_mode = 1

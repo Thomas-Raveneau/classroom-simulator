@@ -1,0 +1,23 @@
+[gd_scene load_steps=2 format=3 uid="uid://mokxq807atv5"]
+
+[ext_resource type="Script" uid="uid://b6wai3ee4pk7f" path="res://scenes/UI/menus/main/steam_invite_list/components/ui_steam_invite.gd" id="1_jt4kc"]
+
+[node name="SteamInvite" type="HBoxContainer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_jt4kc")
+
+[node name="NameLabel" type="Label" parent="."]
+layout_mode = 2
+size_flags_horizontal = 0
+
+[node name="AcceptButton" type="Button" parent="."]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 4
+text = "Accept"
+
+[connection signal="pressed" from="AcceptButton" to="." method="_on_accept_button_pressed"]
