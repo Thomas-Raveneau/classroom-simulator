@@ -53,4 +53,4 @@ func _on_private_button_toggled(private: bool) -> void:
 
 
 func _on_start_button_pressed() -> void:
-	pass # Replace with function body.
+	SteamManager.lobby.start_game()

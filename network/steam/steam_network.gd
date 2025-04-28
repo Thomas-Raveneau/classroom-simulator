@@ -55,10 +55,11 @@ func read_messages() -> void:
 	for message in messages:
 		if message.is_empty() or message == null:
 			continue
-		message.payload = bytes_to_var(message.payload).decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+		var payload: PackedByteArray = bytes_to_var(message.payload)
+		var data: Variant = payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
 		var message_sender: int = message.identity
-		print("Message Payload: %s" % message.payload)
-		match message.command:
+		print("Message Payload: %s" % data)
+		match data.command:
 			"GAME_START":
 				print("GAME IS STARTING")
 
@@ -66,7 +67,7 @@ func close_session(user: SteamUser) -> void:
 	if user.id == SteamManager.user.id:
 		return
 	var session: Dictionary = Steam.getSessionConnectionInfo(user.id, false, false)
-	if !session.state == session_state.CONNECTED:
+	if !session || !session.state || !session.state == session_state.CONNECTED:
 		return
 	Steam.closeSessionWithUser(user.id)
 
