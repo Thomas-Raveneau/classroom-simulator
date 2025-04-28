@@ -10,10 +10,12 @@ const lobby_member_component = preload(
 @onready var friends_container: VBoxContainer = $FriendsContainer
 @onready var members_container: VBoxContainer = $MembersContainer
 @onready var private_button: Button = $PrivateButton
+@onready var start_button: Button = $StartButton
 
 func _ready() -> void:
 	if !SteamManager.user.is_host:
 		private_button.hide()
+		start_button.hide()
 	SteamManager.lobby.on_members_refreshed.connect(refresh_members)
 	SteamManager.user.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
@@ -48,3 +50,7 @@ func _on_back_button_pressed() -> void:
 func _on_private_button_toggled(private: bool) -> void:
 	SteamManager.lobby.set_private(private)
 	private_button.text = "Private" if private else "Friends only"
+
+
+func _on_start_button_pressed() -> void:
+	pass # Replace with function body.

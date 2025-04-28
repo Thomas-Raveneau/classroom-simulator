@@ -9,7 +9,6 @@ var id: int = 0
 var lobby_name: String = ""
 var members: Array[SteamUser] = []
 var max_members: int = 10
-var network: SteamNetwork
 
 func _ready() -> void:
 	Steam.lobby_created.connect(_on_created)
@@ -48,7 +47,7 @@ func leave() -> void:
 		Steam.setLobbyOwner(id, new_host.id)
 	Steam.leaveLobby(id)
 	for member in members:
-		network.close_connection(member)
+		SteamManager.network.close_session(member)
 	id = 0
 	members.clear()
 
@@ -76,6 +75,14 @@ func refresh_members() -> void:
 		members.append(member)
 	on_members_refreshed.emit()
 
+func start_game() -> void:
+	if !SteamManager.user.is_host:
+		return
+	var message: Dictionary = {
+		"command" = "START_GAME"
+	}
+	SteamManager.network.send_message(message)
+
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	if lobby_connect != 1:
 		return
@@ -88,7 +95,7 @@ func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
-	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS: 
+	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0: 
 		return
 	id = lobby_id
 	refresh_members()

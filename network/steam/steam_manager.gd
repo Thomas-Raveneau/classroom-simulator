@@ -18,8 +18,7 @@ func _ready() -> void:
 	user = SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
 	user.refresh_friends()
 	lobby = SteamLobby.new()
-	network = SteamNetwork.new(lobby)
-	lobby.network = network
+	network = SteamNetwork.new()
 	add_child(lobby)
 	add_child(network)
 

@@ -1,66 +1,77 @@
 class_name SteamNetwork
 extends Node
 
-enum SEND_TYPE {
-	UNRELIABLE,
-	UNRELIABLE_NO_DELAY,
-	RELIABLE,
-	RELIABLE_WITH_BUFFERING
+enum send_type {
+	UNRELIABLE = Steam.NETWORKING_SEND_UNRELIABLE,
+	NO_NAGLE = Steam.NETWORKING_SEND_NO_NAGLE,
+	UNRELIABLE_NO_NAGLE = Steam.NETWORKING_SEND_URELIABLE_NO_NAGLE,
+	NO_DELAY = Steam.NETWORKING_SEND_NO_DELAY,
+	UNRELIABLE_NO_DELAY = Steam.NETWORKING_SEND_UNRELIABLE_NO_DELAY,
+	RELIABLE = Steam.NETWORKING_SEND_RELIABLE,
+	RELIABLE_NO_NAGLE = Steam.NETWORKING_SEND_RELIABLE_NO_NAGLE
 }
 
-const PACKET_READ_LIMIT: int = 32
-var lobby: SteamLobby = null
+enum session_state {
+	NONE = 0,
+	CONNECTING = 1,
+	FINDING_ROUTE = 2,
+	CONNECTED = 3,
+	CLOSED_BY_PEER = 4,
+	LOCAL_PROBLEM = 5,
+	WAIT = -1,
+	LINGER = -2,
+	DEAD = -3
+}
 
-func _init(_lobby: SteamLobby) -> void:
-	lobby = _lobby
+const CHANNEL: int = 0
+const MAX_MESSAGES: int = 10
 
 func _ready() -> void:
-	Steam.p2p_session_request.connect(_on_p2p_session_request)
+	Steam.network_messages_session_request.connect(_on_session_request)
+	Steam.network_messages_session_failed.connect(_on_session_failed)
 
 func _process(_delta: float) -> void:
-	if lobby.id == 0:
+	if SteamManager.lobby.id == 0:
 		return
-	read_p2p_packets()
+	read_messages()
 
-func send_p2p_packet(data: Dictionary, target: SteamUser = null, type: SEND_TYPE = SEND_TYPE.RELIABLE) -> void:
+func send_message(
+	message: Dictionary, 
+	target: SteamUser = null, 
+	type: send_type = send_type.RELIABLE
+) -> void:
 	const channel: int = 0
-	var packed_data: PackedByteArray = var_to_bytes(data)
+	var data: PackedByteArray = var_to_bytes(message).compress(FileAccess.COMPRESSION_GZIP)
 	if target == null: # send to everyone
-		for member in lobby.members:
-			if member.id == lobby.local_member.id:
+		for member in SteamManager.lobby.members:
+			if member.id == SteamManager.user.id:
 				continue
-			Steam.sendP2PPacket(member.id, packed_data, type, channel)
+			Steam.sendMessageToUser(member.id, data, type, channel)
 	else:
-		Steam.sendP2PPacket(target.id, packed_data, type, channel)
+		Steam.sendMessageToUser(target.id, data, type, channel)
 
-func read_p2p_packets(read_count: int = 0) -> void:
-	if read_count >= PACKET_READ_LIMIT:
-		return
-	const channel: int = 0
-	if Steam.getAvailableP2PPacketSize(channel) > 0:
-		read_p2p_packet()
-		read_p2p_packets(read_count + 1)
+func read_messages() -> void:
+	var messages: Array = Steam.receiveMessagesOnChannel(CHANNEL, MAX_MESSAGES)
+	for message in messages:
+		if message.is_empty() or message == null:
+			continue
+		message.payload = bytes_to_var(message.payload).decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+		var message_sender: int = message.identity
+		print("Message Payload: %s" % message.payload)
+		match message.command:
+			"GAME_START":
+				print("GAME IS STARTING")
 
-func read_p2p_packet() -> void:
-	const channel: int = 0
-	var available_packet_size: int = Steam.getAvailableP2PPacketSize(channel)
-	if available_packet_size == 0:
-		return
-	var packet: Dictionary = Steam.readP2PPacket(available_packet_size, channel)
-	var data: Dictionary = bytes_to_var(packet.get("data"))
-	var message: String = data.get("message")
-	if message:
-		match message:
-			"LOBBY_USER_JOINED":
-				lobby.refresh_members()
-
-func close_connection(user: SteamUser) -> void:
+func close_session(user: SteamUser) -> void:
 	if user.id == SteamManager.user.id:
 		return
-	var session_state: Dictionary = Steam.getP2PSessionState(user.id)
-	if !session_state.has("connection_active") || !session_state["connection_active"]:
+	var session: Dictionary = Steam.getSessionConnectionInfo(user.id, false, false)
+	if !session.state == session_state.CONNECTED:
 		return
-	Steam.closeP2PSessionWithUser(user.id)
+	Steam.closeSessionWithUser(user.id)
 
-func _on_p2p_session_request(user_id: int):
-	Steam.acceptP2PSessionWithUser(user_id)
+func _on_session_request(user_id: int):
+	Steam.acceptSessionWithUser(user_id)
+
+func _on_session_failed(steam_id: int, session_error: int, state: int, debug_msg: String) -> void:
+	printerr(debug_msg)
