@@ -10,5 +10,10 @@ func _ready() -> void:
 	peer = SteamMultiplayerPeer.new()
 	add_child(steam)
 
+func reset_multiplayer_peer() -> void:
+	multiplayer.multiplayer_peer = null
+	peer.close()
+	peer = SteamMultiplayerPeer.new()
+
 func set_multiplayer_peer() -> void:
 	multiplayer.multiplayer_peer = peer

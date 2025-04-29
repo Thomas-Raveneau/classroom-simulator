@@ -51,8 +51,7 @@ func leave() -> void:
 	for member in members:
 		NetworkManager.steam.network.close_session(member)
 	Steam.leaveLobby(id)
-	NetworkManager.peer.close()
-	NetworkManager.peer = SteamMultiplayerPeer.new()
+	NetworkManager.reset_multiplayer_peer()
 	id = 0
 	lobby_name = ""
 	members.clear()
@@ -81,8 +80,8 @@ func refresh_members() -> void:
 		members.append(member)
 	on_members_refreshed.emit()
 
-func _on_created(lobby_connect: int, lobby_id: int) -> void:
-	if lobby_connect != 1:
+func _on_created(result: Steam.Result, lobby_id: int) -> void:
+	if result != Steam.RESULT_OK:
 		return
 	id = lobby_id
 	NetworkManager.set_multiplayer_peer()
@@ -91,7 +90,7 @@ func _on_created(lobby_connect: int, lobby_id: int) -> void:
 	refresh_members()
 	on_created.emit()
 
-func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
+func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam.ChatRoomEnterResponse) -> void:
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
