@@ -52,10 +52,16 @@ func send_message(
 func read_messages() -> void:
 	var messages: Array = Steam.receiveMessagesOnChannel(CHANNEL, MAX_MESSAGES)
 	for message in messages:
-		if message.is_empty() or message == null:
+		if !message || message.is_empty():
 			continue
+		print("message ", message)
 		var decompressed_payload: PackedByteArray = message.payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-		var payload: Dictionary = bytes_to_var(decompressed_payload)
+		print("decompressed_payload ", decompressed_payload)
+		var payload: Dictionary = bytes_to_var(decompressed_payload \
+			if decompressed_payload.size() > 0 \
+			else message.payload
+		)
+		print("payload ", payload)
 		var _sender_id: int = message.identity
 		match payload.command:
 			"START_GAME":

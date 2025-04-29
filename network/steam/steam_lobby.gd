@@ -13,12 +13,12 @@ var steam_multiplayer_peer := SteamMultiplayerPeer.new()
 
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
+	Steam.lobby_joined.connect(_on_joined)
 	steam_multiplayer_peer.lobby_created.connect(_on_created)
 	steam_multiplayer_peer.lobby_joined.connect(_on_joined)
 	steam_multiplayer_peer.lobby_chat_update.connect(_on_member_update)
 	steam_multiplayer_peer.lobby_data_update.connect(_on_lobby_update)
 	auto_join()
-	
 
 func create() -> void:
 	if id != 0:
@@ -28,11 +28,9 @@ func create() -> void:
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
 		GameSettings.MAX_PLAYERS
 	)
-	multiplayer.multiplayer_peer = steam_multiplayer_peer
 
 func join(lobby_id: int) -> void:
 	steam_multiplayer_peer.connect_lobby(lobby_id)
-	multiplayer.multiplayer_peer = steam_multiplayer_peer
 
 func auto_join() -> void:
 	var args: Array = OS.get_cmdline_args()
@@ -83,19 +81,22 @@ func refresh_members() -> void:
 	on_members_refreshed.emit()
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
+	print("CREATED")
 	if lobby_connect != 1:
 		return
 	id = lobby_id
-	steam_multiplayer_peer.set_lobby_joinable(true)
+	multiplayer.multiplayer_peer = steam_multiplayer_peer
 	lobby_name = "%s's lobby" % SteamManager.user.name
 	steam_multiplayer_peer.set_lobby_data("name", lobby_name)
 	refresh_members()
 	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
-	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0: 
+	print("JOINED")
+	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
+	multiplayer.multiplayer_peer = steam_multiplayer_peer
 	refresh_members()
 	on_lobby_joined.emit()
 
