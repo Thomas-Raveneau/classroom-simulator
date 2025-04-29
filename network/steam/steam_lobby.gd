@@ -48,9 +48,10 @@ func leave() -> void:
 		)
 		var new_host: SteamUser = members[new_host_index]
 		Steam.setLobbyOwner(id, new_host.id)
-	Steam.leaveLobby(id)
 	for member in members:
 		NetworkManager.steam.network.close_session(member)
+	Steam.leaveLobby(id)
+	NetworkManager.peer.close()
 	NetworkManager.peer = SteamMultiplayerPeer.new()
 	id = 0
 	lobby_name = ""
