@@ -7,7 +7,7 @@ var steam_invite_component: PackedScene = preload(
 )
 
 func _ready() -> void:
-	SteamManager.lobby.on_invite_received.connect(_on_invite_received)
+	NetworkManager.steam.lobby.on_invite_received.connect(_on_invite_received)
 
 func refresh_invites() -> void:
 	if invites.size() == 0:

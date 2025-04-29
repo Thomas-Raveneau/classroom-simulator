@@ -31,7 +31,7 @@ func _ready() -> void:
 	Steam.network_messages_session_failed.connect(_on_session_failed)
 
 func _process(_delta: float) -> void:
-	if SteamManager.lobby.id == 0:
+	if  NetworkManager.steam.lobby.id == 0:
 		return
 	#read_messages()
 
@@ -42,8 +42,8 @@ func send_message(
 ) -> void:
 	var data: PackedByteArray = var_to_bytes(message).compress(FileAccess.COMPRESSION_GZIP)
 	if target == null: # send to everyone
-		for member in SteamManager.lobby.members:
-			if member.id == SteamManager.user.id:
+		for member in  NetworkManager.steam.lobby.members:
+			if member.id ==  NetworkManager.steam.user.id:
 				continue
 			Steam.sendMessageToUser(member.id, data, type, CHANNEL)
 	else:
@@ -54,21 +54,18 @@ func read_messages() -> void:
 	for message in messages:
 		if !message || message.is_empty():
 			continue
-		print("message ", message)
 		var decompressed_payload: PackedByteArray = message.payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-		print("decompressed_payload ", decompressed_payload)
 		var payload: Dictionary = bytes_to_var(decompressed_payload \
 			if decompressed_payload.size() > 0 \
 			else message.payload
 		)
-		print("payload ", payload)
 		var _sender_id: int = message.identity
 		match payload.command:
 			"START_GAME":
-				MultiplayerManager.join_game(payload.ip, payload.port)
+				NetworkManager.multi.join_game(payload.ip, payload.port)
 
 func close_session(user: SteamUser) -> void:
-	if user.id == SteamManager.user.id:
+	if user.id ==  NetworkManager.steam.user.id:
 		return
 	var session: Dictionary = Steam.getSessionConnectionInfo(user.id, false, false)
 	if !session || !session.connection_state || !session.connection_state == session_state.CONNECTED:

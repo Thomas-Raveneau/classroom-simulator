@@ -13,4 +13,4 @@ func _ready() -> void:
 func _on_invite_button_pressed() -> void:
 	if !friend:
 		return
-	SteamManager.lobby.invite(friend)
+	NetworkManager.steam.lobby.invite(friend)

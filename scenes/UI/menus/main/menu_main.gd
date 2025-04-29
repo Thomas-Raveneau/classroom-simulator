@@ -1,8 +1,8 @@
 extends Control
 
 func _ready() -> void:
-	SteamManager.lobby.on_created.connect(_on_lobby_created)
-	SteamManager.lobby.on_lobby_joined.connect(_on_lobby_joined)
+	NetworkManager.steam.lobby.on_created.connect(_on_lobby_created)
+	NetworkManager.steam.lobby.on_lobby_joined.connect(_on_lobby_joined)
 
 
 func _on_lobby_created() -> void:
@@ -16,7 +16,7 @@ func _on_lobby_joined() -> void:
 	)
 
 func _on_create_lobby_button_pressed() -> void:
-	SteamManager.lobby.create()
+	NetworkManager.steam.lobby.create()
 
 func _on_join_lobby_button_pressed() -> void:
 	get_tree().change_scene_to_file(

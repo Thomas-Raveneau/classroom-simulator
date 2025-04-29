@@ -13,4 +13,4 @@ func _ready() -> void:
 	name_label.text = user.name
 
 func _on_accept_button_pressed() -> void:
-	SteamManager.lobby.join(lobby_id)
+	NetworkManager.steam.lobby.join(lobby_id)

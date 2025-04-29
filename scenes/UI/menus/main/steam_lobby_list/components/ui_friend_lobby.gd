@@ -11,4 +11,4 @@ func _ready() -> void:
 	name_label.text = friend_lobby.name
 
 func _on_join_button_pressed() -> void:
-	SteamManager.lobby.join(friend_lobby.id)
+	NetworkManager.steam.lobby.join(friend_lobby.id)
