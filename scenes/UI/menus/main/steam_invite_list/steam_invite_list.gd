@@ -7,7 +7,7 @@ var steam_invite_component: PackedScene = preload(
 )
 
 func _ready() -> void:
-	SteamManager.lobby.on_invite.connect(_on_invite)
+	SteamManager.lobby.on_invite_received.connect(_on_invite_received)
 
 func refresh_invites() -> void:
 	if invites.size() == 0:
@@ -17,7 +17,7 @@ func refresh_invites() -> void:
 	for invite in invites:
 		add_child(invite)
 
-func _on_invite(user: SteamUser, lobby_id: int) -> void:
+func _on_invite_received(user: SteamUser, lobby_id: int) -> void:
 	var steam_invite_instance: HBoxContainer = steam_invite_component.instantiate()
 	steam_invite_instance.user = user
 	steam_invite_instance.lobby_id = lobby_id

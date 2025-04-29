@@ -29,19 +29,17 @@ func is_steam_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()
 
 func start_game() -> void:
-	if !SteamManager.user.is_host:
+	if !user.is_host:
 		return
 	var host_success: bool = MultiplayerManager.host_game()
 	if !host_success:
 		return
-	var ip: String = MultiplayerManager.network.ip
-	var port: int = MultiplayerManager.network.port
 	var message: Dictionary = {
 		command = "START_GAME",
 		ip = MultiplayerManager.network.ip,
 		port = MultiplayerManager.network.port
 	}
-	SteamManager.network.send_message(message)
+	network.send_message(message)
 
 func _exit_tree():
 	lobby.leave()

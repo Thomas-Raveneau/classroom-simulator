@@ -51,6 +51,5 @@ func _on_private_button_toggled(private: bool) -> void:
 	SteamManager.lobby.set_private(private)
 	private_button.text = "Private" if private else "Friends only"
 
-
 func _on_start_button_pressed() -> void:
-	SteamManager.lobby.start_game()
+	SteamManager.start_game()

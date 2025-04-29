@@ -6,6 +6,8 @@ var network: MultiplayerNetwork
 func _ready() -> void:
 	lobby = MultiplayerLobby.new()
 	network = MultiplayerNetwork.new()
+	add_child(lobby)
+	add_child(network)
 
 func host_game() -> bool:
 	var success: bool = network.create_server()

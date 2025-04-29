@@ -40,15 +40,14 @@ func send_message(
 	target: SteamUser = null, 
 	type: send_type = send_type.RELIABLE
 ) -> void:
-	const channel: int = 0
 	var data: PackedByteArray = var_to_bytes(message).compress(FileAccess.COMPRESSION_GZIP)
 	if target == null: # send to everyone
 		for member in SteamManager.lobby.members:
 			if member.id == SteamManager.user.id:
 				continue
-			Steam.sendMessageToUser(member.id, data, type, channel)
+			Steam.sendMessageToUser(member.id, data, type, CHANNEL)
 	else:
-		Steam.sendMessageToUser(target.id, data, type, channel)
+		Steam.sendMessageToUser(target.id, data, type, CHANNEL)
 
 func read_messages() -> void:
 	var messages: Array = Steam.receiveMessagesOnChannel(CHANNEL, MAX_MESSAGES)
@@ -60,7 +59,7 @@ func read_messages() -> void:
 		var _sender_id: int = message.identity
 		match payload.command:
 			"START_GAME":
-				MultiplayerManager.
+				MultiplayerManager.join_game(payload.ip, payload.port)
 
 func close_session(user: SteamUser) -> void:
 	if user.id == SteamManager.user.id:

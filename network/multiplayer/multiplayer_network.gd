@@ -22,8 +22,11 @@ func open_upnp() -> UPNP.UPNPResult:
 	if result != UPNP.UPNP_RESULT_SUCCESS:
 		return result
 	var gateway: UPNPDevice = upnp.get_gateway()
-	if !gateway or gateway.is_valid_gateway():
-		return UPNP.UPNP_RESULT_INVALID_GATEWAY
+	var test_ip = gateway.query_external_address()
+	if !gateway:
+		return UPNP.UPNP_RESULT_NO_GATEWAY
+	#if gateway.is_valid_gateway():
+		#return UPNP.UPNP_RESULT_INVALID_GATEWAY
 	var success: bool = false
 	for i in range(0, UPNP_MAX_RETRY):
 		var udp_result: UPNP.UPNPResult = upnp.add_port_mapping(
