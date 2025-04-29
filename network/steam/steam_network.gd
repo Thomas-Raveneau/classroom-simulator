@@ -23,7 +23,7 @@ enum session_state {
 	DEAD = -3
 }
 
-const CHANNEL: int = 0
+const CHANNEL: int = 50
 const MAX_MESSAGES: int = 10
 
 func _ready() -> void:
@@ -33,7 +33,7 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if SteamManager.lobby.id == 0:
 		return
-	read_messages()
+	#read_messages()
 
 func send_message(
 	message: Dictionary, 

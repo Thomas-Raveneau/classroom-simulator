@@ -4,6 +4,7 @@ var app_id: int = 480
 var user: SteamUser
 var lobby: SteamLobby
 var network: SteamNetwork
+var multiplayer_peer := SteamMultiplayerPeer.new()
 
 func _init() -> void:
 	OS.set_environment("SteamAppId", str(app_id))

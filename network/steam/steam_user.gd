@@ -116,9 +116,11 @@ func _on_friend_update(_user_id: int, _flag: Steam.PersonaChange) -> void:
 	refresh_friends()
 
 func _on_friend_lobby_update(success: int, lobby_id: int, _user_id: int) -> void:
+	print("LOBBY UPDATE ", success, lobby_id)
 	if !success:
 		return
 	var friend_lobby_name: String = Steam.getLobbyData(lobby_id, "name")
+	print("UPDATE LOBBY NAME ", friend_lobby_name)
 	for friend in friends:
 		if !friend.lobby || friend.lobby.id != lobby_id:
 			continue

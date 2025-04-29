@@ -9,28 +9,26 @@ signal on_invite_received(user: SteamUser, lobby_id: int)
 var id: int = 0
 var lobby_name: String = ""
 var members: Array[SteamUser] = []
-var steam_multiplayer_peer := SteamMultiplayerPeer.new()
 
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
 	Steam.lobby_joined.connect(_on_joined)
-	steam_multiplayer_peer.lobby_created.connect(_on_created)
-	steam_multiplayer_peer.lobby_joined.connect(_on_joined)
-	steam_multiplayer_peer.lobby_chat_update.connect(_on_member_update)
-	steam_multiplayer_peer.lobby_data_update.connect(_on_lobby_update)
+	SteamManager.multiplayer_peer.lobby_created.connect(_on_created)
+	SteamManager.multiplayer_peer.lobby_chat_update.connect(_on_member_update)
+	SteamManager.multiplayer_peer.lobby_data_update.connect(_on_lobby_update)
 	auto_join()
 
 func create() -> void:
 	if id != 0:
 		return
 	SteamManager.user.is_host = true
-	steam_multiplayer_peer.create_lobby(
+	SteamManager.multiplayer_peer.create_lobby(
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
 		GameSettings.MAX_PLAYERS
 	)
 
 func join(lobby_id: int) -> void:
-	steam_multiplayer_peer.connect_lobby(lobby_id)
+	SteamManager.multiplayer_peer.connect_lobby(lobby_id)
 
 func auto_join() -> void:
 	var args: Array = OS.get_cmdline_args()
@@ -81,22 +79,21 @@ func refresh_members() -> void:
 	on_members_refreshed.emit()
 
 func _on_created(lobby_connect: int, lobby_id: int) -> void:
-	print("CREATED")
 	if lobby_connect != 1:
 		return
 	id = lobby_id
-	multiplayer.multiplayer_peer = steam_multiplayer_peer
+	SteamManager.multiplayer.multiplayer_peer = SteamManager.multiplayer_peer
 	lobby_name = "%s's lobby" % SteamManager.user.name
-	steam_multiplayer_peer.set_lobby_data("name", lobby_name)
+	Steam.setLobbyData(id, "name", lobby_name)
+	SteamManager.multiplayer.set_lobby_data("name", lobby_name)
 	refresh_members()
 	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: int) -> void:
-	print("JOINED")
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
-	multiplayer.multiplayer_peer = steam_multiplayer_peer
+	SteamManager.multiplayer.multiplayer_peer = SteamManager.multiplayer_peer
 	refresh_members()
 	on_lobby_joined.emit()
 
@@ -121,7 +118,8 @@ func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	if owner_id == SteamManager.user.id && !SteamManager.user.is_host:
 		SteamManager.user.is_host = true
 		lobby_name = "%s's lobby" % SteamManager.user.name
-		steam_multiplayer_peer.set_lobby_data("name", lobby_name)
+		Steam.setLobbyData(id, "name", lobby_name)
+		SteamManager.multiplayer_peer.set_lobby_data("name", lobby_name)
 		return
-	lobby_name = Steam.getLobbyData(id, "name")
+	lobby_name = SteamManager.multiplayer_peer.get_lobby_data("name")
 	refresh_members()
