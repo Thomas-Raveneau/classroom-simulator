@@ -10,10 +10,13 @@ func _ready() -> void:
 	add_child(steam)
 
 func start_game() -> void:
-	print(steam.lobby.members)
+	load_game.rpc()
+	change_scene.rpc("res://scenes/maps/prototype/map_prototype.tscn")
+
+@rpc("any_peer", "call_local", "reliable")
+func load_game() -> void:
 	lobby = NetworkLobby.new(steam.lobby.members)
 	add_child(lobby)
-	change_scene("res://scenes/maps/prototype/map_prototype.tscn")
 
 func reset_multiplayer_peer() -> void:
 	multiplayer.multiplayer_peer = null
