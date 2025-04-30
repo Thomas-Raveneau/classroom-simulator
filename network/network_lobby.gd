@@ -5,12 +5,7 @@ signal player_connected(peer_id, player_info)
 signal player_disconnected(peer_id)
 signal server_disconnected
 
-var players: Array[NetworkPlayer] = []
-
-func _init(steam_lobby_members: Array[SteamUser]) -> void:
-	for steam_lobby_member in steam_lobby_members:
-		var player = NetworkPlayer.new(steam_lobby_member)
-		players.append(player)
+var players: Dictionary = {}
 
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_player_connected)
@@ -18,6 +13,12 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_ok)
 	multiplayer.connection_failed.connect(_on_connected_fail)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
+
+func set_players(steam_lobby_members: Array[SteamUser]) -> void:
+	players.clear()
+	for steam_lobby_member in steam_lobby_members:
+		var player = NetworkPlayer.new(steam_lobby_member)
+		players[player.peer_id] = player
 
 func remove_multiplayer_peer():
 	multiplayer.multiplayer_peer = null
@@ -36,16 +37,9 @@ func player_loaded():
 			#$/root/Game.start_game()
 			#players_loaded = 0
 
-func update_player(peer_id: int, data: Dictionary) -> void:
-	for player in players:
-		if player.peer_id != peer_id:
-			continue
-		for key in data.keys():
-			player[key] = data[key]
-
 func _on_player_connected(peer_id: int):
-	print("PLAYER CONNECTED")
-	update_player(peer_id, { connected = true })
+	players[peer_id].connected = true
+	print("PLAYER CONNECTED ", players)
 
 #@rpc("any_peer", "reliable")
 #func _register_player(new_player_info):
@@ -56,14 +50,14 @@ func _on_player_connected(peer_id: int):
 
 func _on_player_disconnected(peer_id: int):
 	print("PLAYER DISCONNECTED")
-	update_player(peer_id, { connected = false })
+	players[peer_id].connected = false
 	player_disconnected.emit(peer_id)
 
 func _on_connected_ok():
-	print("CONNECTED OK")
 	var peer_id = multiplayer.get_unique_id()
-	update_player(peer_id, { connected = true })
+	players[peer_id].connected = true
 	player_connected.emit(peer_id)
+	print("CONNECTED OK ", players)
 
 func _on_connected_fail():
 	print("CONNECTED FAILED")

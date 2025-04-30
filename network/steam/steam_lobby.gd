@@ -22,7 +22,7 @@ func create() -> void:
 	if id != 0:
 		return
 	NetworkManager.steam.user.is_host = true
-	var error = NetworkManager.peer.create_lobby(
+	NetworkManager.peer.create_lobby(
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
 		GameSettings.MAX_PLAYERS
 	)
