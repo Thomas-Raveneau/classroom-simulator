@@ -1,6 +1,14 @@
-[gd_scene load_steps=10 format=3 uid="uid://sh07mxo33ehw"]
+[gd_scene load_steps=11 format=3 uid="uid://sh07mxo33ehw"]
 
 [ext_resource type="Script" uid="uid://d1bqo2oldhty4" path="res://scenes/gameplay/characters/player/player.gd" id="1_lcm6i"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_lcm6i"]
+properties/0/path = NodePath("Meshes:rotation")
+properties/0/spawn = true
+properties/0/replication_mode = 1
+properties/1/path = NodePath(".:position")
+properties/1/spawn = true
+properties/1/replication_mode = 1
 
 [sub_resource type="CapsuleShape3D" id="CapsuleShape3D_dqp82"]
 
@@ -31,6 +39,9 @@ albedo_color = Color(0.223529, 0.32549, 0.364706, 1)
 
 [node name="Player" type="CharacterBody3D"]
 script = ExtResource("1_lcm6i")
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_lcm6i")
 
 [node name="Collision" type="CollisionShape3D" parent="."]
 shape = SubResource("CapsuleShape3D_dqp82")

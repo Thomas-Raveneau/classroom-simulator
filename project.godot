@@ -20,6 +20,11 @@ config/icon="res://icon.svg"
 GameSettings="*res://config/game_settings.gd"
 NetworkManager="*res://network/network_manager.gd"
 
+[display]
+
+window/size/viewport_width=800
+window/size/viewport_height=600
+
 [input]
 
 move_up={

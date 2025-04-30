@@ -49,6 +49,18 @@ offset_bottom = -17.0
 grow_vertical = 0
 text = "Back"
 
+[node name="StartButton" type="Button" parent="."]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 75.0
+offset_top = -48.0
+offset_right = 121.0
+offset_bottom = -17.0
+grow_vertical = 0
+text = "Start"
+
 [node name="PrivateButton" type="CheckButton" parent="."]
 layout_mode = 1
 anchors_preset = 7
@@ -68,21 +80,6 @@ text = "Friends only"
 flat = true
 alignment = 2
 
-[node name="StartButton" type="Button" parent="."]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -62.0
-offset_top = -48.0
-offset_right = -17.0
-offset_bottom = -17.0
-grow_horizontal = 0
-grow_vertical = 0
-text = "Start"
-
 [connection signal="pressed" from="BackButton" to="." method="_on_back_button_pressed"]
-[connection signal="toggled" from="PrivateButton" to="." method="_on_private_button_toggled"]
 [connection signal="pressed" from="StartButton" to="." method="_on_start_button_pressed"]
+[connection signal="toggled" from="PrivateButton" to="." method="_on_private_button_toggled"]
