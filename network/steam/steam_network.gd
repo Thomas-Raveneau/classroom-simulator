@@ -60,12 +60,9 @@ func read_messages() -> void:
 			else message.payload
 		)
 		var _sender_id: int = message.identity
-		match payload.command:
-			"START_GAME":
-				NetworkManager.multi.join_game(payload.ip, payload.port)
 
 func close_session(user: SteamUser) -> void:
-	if user.id ==  NetworkManager.steam.user.id:
+	if user.id ==  NetworkManager.local_user.steam.id:
 		return
 	var session: Dictionary = Steam.getSessionConnectionInfo(user.id, false, false)
 	if !session || !session.connection_state || !session.connection_state == session_state.CONNECTED:

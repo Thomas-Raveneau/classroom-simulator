@@ -2,7 +2,6 @@ class_name SteamManager
 extends Node
 
 var app_id: int = 480
-var user: SteamUser
 var lobby: SteamLobby
 var network: SteamNetwork
 
@@ -16,8 +15,7 @@ func _ready() -> void:
 	var init_success: bool = Steam.steamInit()
 	if !init_success || !Steam.isSubscribed():
 		get_tree().quit()
-	user = SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
-	user.refresh_friends()
+	init_local_user()
 	lobby = SteamLobby.new()
 	network = SteamNetwork.new()
 	add_child(lobby)
@@ -28,6 +26,11 @@ func _process(_delta: float) -> void:
 
 func is_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()
+
+func init_local_user() -> void:
+	var steam_user := SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
+	NetworkManager.local_user.set_steam(steam_user)
+	NetworkManager.local_user.steam.refresh_friends()
 
 func _exit_tree():
 	lobby.leave()

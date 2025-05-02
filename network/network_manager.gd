@@ -2,10 +2,12 @@ extends Node
 
 var steam: SteamManager
 var lobby: NetworkLobby
+var local_user: NetworkUser
 var peer: SteamMultiplayerPeer
 
 func _ready() -> void:
 	steam = SteamManager.new()
+	local_user = NetworkUser.new()
 	peer = SteamMultiplayerPeer.new()
 	add_child(steam)
 	steam.lobby.on_created.connect(_on_lobby_joined)
@@ -25,7 +27,7 @@ func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
 func _on_lobby_joined() -> void:
-	lobby = NetworkLobby.new(steam.user)
+	lobby = NetworkLobby.new(local_user.steam)
 	add_child(lobby)
 	multiplayer.multiplayer_peer = peer
 

@@ -9,7 +9,7 @@ signal on_invite_received(user: SteamUser, lobby_id: int)
 
 var id: int = 0
 var lobby_name: String = ""
-var members: Array[SteamUser] = []
+var members: Dictionary = {}
 
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
@@ -22,7 +22,7 @@ func _ready() -> void:
 func create() -> void:
 	if id != 0:
 		return
-	NetworkManager.steam.user.is_host = true
+	NetworkManager.local_user.is_host = true
 	NetworkManager.peer.create_lobby(
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
 		GameSettings.MAX_PLAYERS
@@ -42,28 +42,21 @@ func auto_join() -> void:
 func leave() -> void:
 	if id == 0:
 		return
-	if NetworkManager.steam.user.is_host && members.size() > 1:
-		var new_host_index: int = members.find_custom(
-			func (member):
-				return member.id != NetworkManager.steam.user.id
-		)
-		var new_host: SteamUser = members[new_host_index]
+	if NetworkManager.local_user.is_host && NetworkManager.lobby.players.size() > 1:
+		var new_host: SteamUser
+		for member_id in members.keys():
+			if member_id ==  NetworkManager.local_user.steam.id:
+				continue
+			new_host = members[member_id]
+			break
 		Steam.setLobbyOwner(id, new_host.id)
-	for member in members:
-		NetworkManager.steam.network.close_session(member)
+	for member_id in members.keys():
+		NetworkManager.steam.network.close_session(members[member_id])
 	Steam.leaveLobby(id)
 	NetworkManager.reset_multiplayer_peer()
 	id = 0
 	lobby_name = ""
 	members.clear()
-
-func set_private(private: bool) -> void:
-	if !NetworkManager.steam.user.is_host:
-		return
-	if private:
-		Steam.setLobbyType(id, Steam.LOBBY_TYPE_PRIVATE)
-	else:
-		Steam.setLobbyType(id, Steam.LOBBY_TYPE_FRIENDS_ONLY)
 
 func invite(user: SteamUser) -> void:
 	var success: bool = Steam.inviteUserToLobby(id, user.id)
@@ -78,14 +71,22 @@ func refresh_members() -> void:
 		var member_id: int = Steam.getLobbyMemberByIndex(id, member_index)
 		var member_name: String = Steam.getFriendPersonaName(member_id)
 		var member = SteamUser.new(member_id, member_name, null, member_id == host_id)
-		members.append(member)
+		members[member_id] = member
 	on_members_refreshed.emit()
+
+func set_private(private: bool) -> void:
+	if !NetworkManager.local_user.is_host:
+		return
+	if private:
+		Steam.setLobbyType(id, Steam.LOBBY_TYPE_PRIVATE)
+	else:
+		Steam.setLobbyType(id, Steam.LOBBY_TYPE_FRIENDS_ONLY)
 
 func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:
 		return
 	id = lobby_id
-	lobby_name = "%s's lobby" % NetworkManager.steam.user.name
+	lobby_name = "%s's lobby" % NetworkManager.local_user.steam.name
 	Steam.setLobbyData(id, "name", lobby_name)
 	refresh_members()
 	on_created.emit()
@@ -115,9 +116,9 @@ func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	if !success || id == 0:
 		return
 	var owner_id: int = Steam.getLobbyOwner(id)
-	if owner_id == NetworkManager.steam.user.id && !NetworkManager.steam.user.is_host:
-		NetworkManager.steam.user.is_host = true
-		lobby_name = "%s's lobby" %  NetworkManager.steam.user.name
+	if owner_id == NetworkManager.local_user.steam.id && !NetworkManager.local_user.is_host:
+		NetworkManager.local_user.is_host = true
+		lobby_name = "%s's lobby" %  NetworkManager.local_user.steam.name
 		Steam.setLobbyData(id, "name", lobby_name)
 		return
 	lobby_name = Steam.getLobbyData(id, "name")
