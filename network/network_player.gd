@@ -5,9 +5,10 @@ var name: String = ""
 var peer_id: int = 0
 var connected: bool = false
 
-func _init(_steam: SteamUser):
+func _init(_steam: SteamUser, _connected: bool):
 	steam = _steam
 	name = steam.name
+	connected = _connected
 	peer_id = NetworkManager.peer.get_peer_id_from_steam64(steam.id)
 
 func _to_string() -> String:

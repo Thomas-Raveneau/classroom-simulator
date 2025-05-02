@@ -2,7 +2,7 @@ extends Control
 
 func _ready() -> void:
 	NetworkManager.steam.lobby.on_created.connect(_on_lobby_created)
-	NetworkManager.steam.lobby.on_lobby_joined.connect(_on_lobby_joined)
+	NetworkManager.steam.lobby.on_joined.connect(_on_lobby_joined)
 
 func _on_lobby_created() -> void:
 	get_tree().change_scene_to_file(

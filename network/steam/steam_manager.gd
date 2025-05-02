@@ -11,7 +11,7 @@ func _init() -> void:
 	OS.set_environment("SteamGameId", str(app_id))
 
 func _ready() -> void:
-	if !is_steam_enabled():
+	if !is_enabled():
 		return
 	var init_success: bool = Steam.steamInit()
 	if !init_success || !Steam.isSubscribed():
@@ -26,23 +26,8 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	Steam.run_callbacks()
 
-func is_steam_enabled():
+func is_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()
-
-func start_game() -> void:
-	print("TODO HERE")
-	return
-	#if !user.is_host:
-		#return
-	#var host_success: bool = NetworkManager.multi.host_game()
-	#if !host_success:
-		#return
-	#var message: Dictionary = {
-		#command = "START_GAME",
-		#ip = MultiplayerManager.network.ip,
-		#port = MultiplayerManager.network.port
-	#}
-	#network.send_message(message)
 
 func _exit_tree():
 	lobby.leave()

@@ -2,7 +2,8 @@ class_name SteamLobby
 extends Node
 
 signal on_created
-signal on_lobby_joined
+signal on_joined
+signal on_left
 signal on_members_refreshed
 signal on_invite_received(user: SteamUser, lobby_id: int)
 
@@ -84,7 +85,6 @@ func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:
 		return
 	id = lobby_id
-	NetworkManager.set_multiplayer_peer()
 	lobby_name = "%s's lobby" % NetworkManager.steam.user.name
 	Steam.setLobbyData(id, "name", lobby_name)
 	refresh_members()
@@ -94,9 +94,8 @@ func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
-	NetworkManager.set_multiplayer_peer()
 	refresh_members()
-	on_lobby_joined.emit()
+	on_joined.emit()
 
 func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:
 	var user: SteamUser = SteamUser.new(user_id)
