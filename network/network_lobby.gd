@@ -7,10 +7,6 @@ signal server_disconnected
 
 var players: Dictionary = {}
 
-func _init(steam_user: SteamUser) -> void:
-	var player = NetworkUser.new(steam_user)
-	players[player.peer_id] = player
-
 func _ready() -> void:
 	multiplayer.peer_connected.connect(_on_player_connected)
 	multiplayer.peer_disconnected.connect(_on_player_disconnected)
@@ -19,8 +15,6 @@ func _ready() -> void:
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
 func _on_player_connected(peer_id: int) -> void:
-	if peer_id == 1:
-		return
 	var steam_id: int = NetworkManager.peer.get_steam64_from_peer_id(peer_id)
 	var steam_user: SteamUser = NetworkManager.steam.lobby.members[steam_id]
 	var player = NetworkUser.new(steam_user)

@@ -27,9 +27,11 @@ func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
 func _on_lobby_joined() -> void:
-	lobby = NetworkLobby.new(local_user.steam)
+	lobby = NetworkLobby.new()
 	add_child(lobby)
 	multiplayer.multiplayer_peer = peer
+	local_user.peer_id = peer.get_unique_id()
+	lobby.players[local_user.peer_id] = local_user
 
 func _on_lobby_left() -> void:
 	lobby = null
