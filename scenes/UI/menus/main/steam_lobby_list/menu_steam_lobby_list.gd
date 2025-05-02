@@ -7,8 +7,8 @@ const friend_lobby_component: PackedScene = preload(
 )
 
 func _ready() -> void:
-	NetworkManager.steam.user.on_friends_refreshed.connect(refresh_friends_lobbies)
-	NetworkManager.steam.user.on_friend_lobby_update.connect(refresh_friends_lobbies)
+	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends_lobbies)
+	NetworkManager.local_user.steam.on_friend_lobby_update.connect(refresh_friends_lobbies)
 	NetworkManager.steam.lobby.on_joined.connect(_on_lobby_joined)
 	refresh_friends_lobbies()
 

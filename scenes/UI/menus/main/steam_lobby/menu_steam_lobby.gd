@@ -39,7 +39,7 @@ func refresh_friends() -> void:
 	for child: Node in friends_container.get_children():
 		child.queue_free()
 	for friend: SteamUser in NetworkManager.local_user.steam.friends:
-		if NetworkManager.steam.lobby.members[friend.id]:
+		if NetworkManager.steam.lobby.members.has(friend.id):
 			continue
 		var friend_invite_instance = friend_invite_component.instantiate()
 		friend_invite_instance.friend = friend
