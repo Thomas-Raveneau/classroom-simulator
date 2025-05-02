@@ -12,6 +12,8 @@ const lobby_member_component: PackedScene = preload(
 @onready var private_button: Button = $PrivateButton
 @onready var start_button: Button = $StartButton
 
+var loaded: bool = false
+
 func _ready() -> void:
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
@@ -20,11 +22,17 @@ func _ready() -> void:
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
 	refresh_members()
+	loaded = true
 
 func _enter_tree() -> void:
+	if !loaded:
+		return
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
 		start_button.hide()
+	else:
+		private_button.show()
+		start_button.show()
 
 func refresh_members() -> void:
 	for child: Node in members_container.get_children():

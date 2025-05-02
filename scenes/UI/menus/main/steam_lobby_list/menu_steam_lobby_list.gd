@@ -15,7 +15,7 @@ func _ready() -> void:
 func refresh_friends_lobbies() -> void:
 	for child: Node in lobbies_container.get_children():
 		child.queue_free()
-	var friends_lobbies: Array[SteamFriendLobby] = NetworkManager.steam.user.get_friends_lobbies()
+	var friends_lobbies: Array[SteamFriendLobby] = NetworkManager.local_user.steam.get_friends_lobbies()
 	for friend_lobby in friends_lobbies:
 		if friend_lobby.id == 0 || !friend_lobby.name:
 			continue
