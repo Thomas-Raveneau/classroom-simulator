@@ -19,7 +19,7 @@ func _on_player_connected(peer_id: int) -> void:
 	var steam_user: SteamUser = NetworkManager.steam.lobby.members[steam_id]
 	var player = NetworkUser.new(steam_user)
 	players[player.peer_id] = player
-	print("PLAYER CONNECTED ", players)
+	print("PLAYER CONNECTED ", peer_id, players)
 
 func _on_player_disconnected(peer_id: int):
 	print("PLAYER DISCONNECTED")

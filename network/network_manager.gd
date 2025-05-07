@@ -27,6 +27,7 @@ func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
 func _on_lobby_joined() -> void:
+	print("NETWORK ON LOBBY JOINED")
 	lobby = NetworkLobby.new()
 	add_child(lobby)
 	multiplayer.multiplayer_peer = peer

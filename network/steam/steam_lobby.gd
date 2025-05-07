@@ -23,13 +23,15 @@ func create() -> void:
 	if id != 0:
 		return
 	NetworkManager.local_user.is_host = true
-	NetworkManager.peer.create_lobby(
-		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
-		GameSettings.MAX_PLAYERS
-	)
+	Steam.createLobby(SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, GameSettings.MAX_PLAYERS)
+	#NetworkManager.peer.create_lobby(
+		#SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
+		#GameSettings.MAX_PLAYERS
+	#)
 
 func join(lobby_id: int) -> void:
-	NetworkManager.peer.connect_lobby(lobby_id)
+	Steam.joinLobby(lobby_id)
+	#NetworkManager.peer.connect_lobby(lobby_id)
 
 func auto_join() -> void:
 	var args: Array = OS.get_cmdline_args()
@@ -57,6 +59,7 @@ func leave() -> void:
 	id = 0
 	lobby_name = ""
 	members.clear()
+	on_left.emit()
 
 func invite(user: SteamUser) -> void:
 	var success: bool = Steam.inviteUserToLobby(id, user.id)
@@ -94,6 +97,7 @@ func _on_created(result: Steam.Result, lobby_id: int) -> void:
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam.ChatRoomEnterResponse) -> void:
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
+	print('STEAM ON JOINED')
 	id = lobby_id
 	refresh_members()
 	on_joined.emit()
