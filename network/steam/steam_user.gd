@@ -26,7 +26,6 @@ enum Relationship {
 var id: int = 0
 var name: String = ""
 var status: Status = Status.OFFLINE
-var is_host: bool = false
 var lobby: SteamFriendLobby
 var friends: Array[SteamUser] = []
 
@@ -34,11 +33,9 @@ func _init(
 	_id: int, 
 	_name: String = "", 
 	_lobby: SteamFriendLobby = null, 
-	_is_host: bool = false
 ) -> void:
 	id = _id
 	name = _name
-	is_host = _is_host
 	lobby = _lobby
 	if name.is_empty():
 		name = Steam.getFriendPersonaName(id)
@@ -47,7 +44,7 @@ func _init(
 	Steam.lobby_data_update.connect(_on_friend_lobby_update)
 
 func _to_string() -> String:
-	return str({ "id": id, "name": name, "is_host": is_host })
+	return str({ "id": id, "name": name })
 
 func filter_friend(
 	friend: Dictionary,

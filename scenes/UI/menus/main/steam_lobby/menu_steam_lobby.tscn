@@ -14,7 +14,7 @@ grow_vertical = 2
 pivot_offset = Vector2(0.99, 0)
 script = ExtResource("1_xf7c5")
 
-[node name="MembersContainer" type="VBoxContainer" parent="."]
+[node name="PlayersContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5

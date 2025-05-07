@@ -1,15 +1,15 @@
 [gd_scene load_steps=3 format=3 uid="uid://b8biqoo3coe5t"]
 
-[ext_resource type="Script" uid="uid://cdrnls8he5vxq" path="res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_member.gd" id="1_c88sf"]
-[ext_resource type="Texture2D" uid="uid://6llx0l6qkkup" path="res://assets/UI/menus/main/steam_lobby/lobby_host_icon.svg" id="1_qe8q0"]
+[ext_resource type="Script" uid="uid://cdrnls8he5vxq" path="res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_player.gd" id="1_0jy4i"]
+[ext_resource type="Texture2D" uid="uid://6llx0l6qkkup" path="res://assets/UI/menus/main/steam_lobby/lobby_host_icon.svg" id="2_rgx0b"]
 
-[node name="UiLobbyMember" type="HBoxContainer"]
+[node name="UiLobbyPlayer" type="HBoxContainer"]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_c88sf")
+script = ExtResource("1_0jy4i")
 
 [node name="NameLabel" type="Label" parent="."]
 layout_mode = 2
@@ -22,5 +22,5 @@ custom_minimum_size = Vector2(25, 25)
 layout_mode = 2
 size_flags_horizontal = 4
 size_flags_vertical = 6
-texture = ExtResource("1_qe8q0")
+texture = ExtResource("2_rgx0b")
 expand_mode = 1

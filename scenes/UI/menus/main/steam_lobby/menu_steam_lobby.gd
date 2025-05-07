@@ -3,25 +3,26 @@ extends Control
 const friend_invite_component: PackedScene = preload(
 	"res://scenes/UI/menus/main/steam_lobby/components/ui_friend_invite.tscn"
 )
-const lobby_member_component: PackedScene = preload(
-	"res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_member.tscn"
+const lobby_player_component: PackedScene = preload(
+	"res://scenes/UI/menus/main/steam_lobby/components/ui_lobby_player.tscn"
 )
 
 @onready var friends_container: VBoxContainer = $FriendsContainer
-@onready var members_container: VBoxContainer = $MembersContainer
+@onready var players_container: VBoxContainer = $PlayersContainer
 @onready var private_button: Button = $PrivateButton
 @onready var start_button: Button = $StartButton
 
 var loaded: bool = false
 
 func _ready() -> void:
+	print("HERE UI")
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
 		start_button.hide()
-	NetworkManager.steam.lobby.on_members_refreshed.connect(refresh_members)
+	NetworkManager.lobby.player_connected.connect(_on_player_connected)
+	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
-	refresh_members()
 	loaded = true
 
 func _enter_tree() -> void:
@@ -34,23 +35,29 @@ func _enter_tree() -> void:
 		private_button.show()
 		start_button.show()
 
-func refresh_members() -> void:
-	for child: Node in members_container.get_children():
+func _on_player_connected(player: NetworkUser) -> void:
+	print("UI PLAYER CONNECTED")
+	var lobby_player_instance: UiLobbyPlayer = lobby_player_component.instantiate()
+	lobby_player_instance.player = player
+	players_container.add_child(lobby_player_instance)
+	refresh_friends()
+
+func _on_player_disconnected(player: NetworkUser) -> void:
+	for child: UiLobbyPlayer in players_container.get_children():
+		if child.player.peer_id != player.peer_id:
+			continue
 		child.queue_free()
-	for member_id in NetworkManager.steam.lobby.members.keys():
-		var lobby_member_instance = lobby_member_component.instantiate()
-		lobby_member_instance.member = NetworkManager.steam.lobby.members[member_id]
-		members_container.add_child(lobby_member_instance)
+		break
 	refresh_friends()
 
 func refresh_friends() -> void:
 	for child: Node in friends_container.get_children():
 		child.queue_free()
-	for friend: SteamUser in NetworkManager.local_user.steam.friends:
-		if NetworkManager.steam.lobby.members.has(friend.id):
+	for steam_friend: SteamUser in NetworkManager.local_user.steam.friends:
+		if NetworkManager.lobby.has_steam_user(steam_friend.id):
 			continue
 		var friend_invite_instance = friend_invite_component.instantiate()
-		friend_invite_instance.friend = friend
+		friend_invite_instance.friend = steam_friend
 		friends_container.add_child(friend_invite_instance)
 
 func _on_back_button_pressed() -> void:

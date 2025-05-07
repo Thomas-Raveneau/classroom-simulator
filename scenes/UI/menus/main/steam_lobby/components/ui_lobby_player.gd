@@ -1,14 +1,15 @@
+class_name UiLobbyPlayer
 extends HBoxContainer
 
 @onready var name_label: Label = $NameLabel
 @onready var host_icon: TextureRect = $HostIcon
 
-var member: SteamUser
+var player: NetworkUser
 
 func _ready() -> void:
-	if !member:
+	if !player:
 		queue_free()
 		return
-	name_label.text = member.name
-	if !member.is_host:
+	player.text = player.name
+	if !player.is_host:
 		host_icon.hide()
