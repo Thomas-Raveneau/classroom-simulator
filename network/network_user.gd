@@ -8,7 +8,7 @@ var connected: bool = false
 
 func _init(_steam: SteamUser = null, _connected: bool = true) -> void:
 	connected = _connected
-	if steam:
+	if _steam:
 		set_steam(_steam)
 
 func set_steam(_steam: SteamUser) -> void:

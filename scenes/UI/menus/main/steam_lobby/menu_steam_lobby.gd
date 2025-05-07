@@ -58,7 +58,6 @@ func refresh_players() -> void:
 		lobby_player_instance.player = player
 		players_container.add_child(lobby_player_instance)
 
-
 func refresh_friends() -> void:
 	for child: Node in friends_container.get_children():
 		child.queue_free()
