@@ -18,6 +18,7 @@ func set_player(player: NetworkUser) -> void:
 	if players.has(player.peer_id):
 		return
 	players[player.peer_id] = player
+	print("PLAYER SET")
 	player_connected.emit(player)
 
 func has_steam_user(steam_id: int) -> bool:
@@ -28,12 +29,12 @@ func has_steam_user(steam_id: int) -> bool:
 	return false
 
 func _on_player_connected(peer_id: int) -> void:
+	print("PLAYER CONNECTED ", peer_id)
 	var steam_id: int = NetworkManager.peer.get_steam64_from_peer_id(peer_id)
 	var steam_user := SteamUser.new(steam_id)
 	var player := NetworkUser.new(steam_user)
 	players[player.peer_id] = player
 	player_connected.emit(player)
-	print("PLAYER CONNECTED ", peer_id, players)
 
 func _on_player_disconnected(peer_id: int):
 	print("PLAYER DISCONNECTED")

@@ -15,7 +15,6 @@ const lobby_player_component: PackedScene = preload(
 var loaded: bool = false
 
 func _ready() -> void:
-	print("HERE UI")
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
 		start_button.hide()
@@ -23,6 +22,7 @@ func _ready() -> void:
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
+	refresh_players()
 	loaded = true
 
 func _enter_tree() -> void:
@@ -34,6 +34,7 @@ func _enter_tree() -> void:
 	else:
 		private_button.show()
 		start_button.show()
+
 
 func _on_player_connected(player: NetworkUser) -> void:
 	print("UI PLAYER CONNECTED")
@@ -49,6 +50,14 @@ func _on_player_disconnected(player: NetworkUser) -> void:
 		child.queue_free()
 		break
 	refresh_friends()
+
+func refresh_players() -> void:
+	for player_id in NetworkManager.lobby.players.keys():
+		var player: NetworkUser = NetworkManager.lobby.players[player_id]
+		var lobby_player_instance = lobby_player_component.instantiate()
+		lobby_player_instance.player = player
+		players_container.add_child(lobby_player_instance)
+
 
 func refresh_friends() -> void:
 	for child: Node in friends_container.get_children():
