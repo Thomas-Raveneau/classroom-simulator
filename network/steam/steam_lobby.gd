@@ -47,8 +47,9 @@ func leave() -> void:
 			#new_host = members[member_id]
 			#break
 		#Steam.setLobbyOwner(id, new_host.id)
-	#for member_id in members.keys():
-		#NetworkManager.steam.network.close_session(members[member_id])
+	#for player_id in NetworkManager.lobby.players.keys():
+		#var player: NetworkUser = NetworkManager.lobby.players[player_id]
+		#NetworkManager.steam.network.close_session(player.steam)
 	Steam.leaveLobby(id)
 	id = 0
 	lobby_name = ""
@@ -76,14 +77,12 @@ func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	id = lobby_id
 	lobby_name = "%s's lobby" % NetworkManager.local_user.steam.name
 	Steam.setLobbyData(id, "name", lobby_name)
-	print('STEAM ON CREATED')
 	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam.ChatRoomEnterResponse) -> void:
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
-	print('STEAM ON JOINED')
 	on_joined.emit()
 
 func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:

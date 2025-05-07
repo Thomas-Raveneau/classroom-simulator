@@ -35,14 +35,12 @@ func _on_player_connected(peer_id: int) -> void:
 	player_connected.emit(player)
 
 func _on_player_disconnected(peer_id: int):
-	print("PLAYER DISCONNECTED")
 	var disconnected_player: NetworkUser = players[peer_id]
 	players.erase(peer_id)
 	player_disconnected.emit(disconnected_player)
 
 func _on_connected_ok():
 	var peer_id = NetworkManager.local_user.peer_id
-	print("CONNECTED OK ", peer_id, players)
 	players[peer_id].connected = true
 	player_connected.emit(players[peer_id])
 
