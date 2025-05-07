@@ -55,7 +55,7 @@ func read_messages() -> void:
 		if !message || message.is_empty():
 			continue
 		var decompressed_payload: PackedByteArray = message.payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
-		var payload: Dictionary = bytes_to_var(decompressed_payload \
+		var _payload: Dictionary = bytes_to_var(decompressed_payload \
 			if decompressed_payload.size() > 0 \
 			else message.payload
 		)

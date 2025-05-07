@@ -4,7 +4,6 @@ extends Node
 signal on_created
 signal on_joined
 signal on_left
-signal on_members_refreshed
 signal on_invite_received(user: SteamUser, lobby_id: int)
 
 var id: int = 0
@@ -68,6 +67,9 @@ func set_private(private: bool) -> void:
 		Steam.setLobbyType(id, Steam.LOBBY_TYPE_PRIVATE)
 	else:
 		Steam.setLobbyType(id, Steam.LOBBY_TYPE_FRIENDS_ONLY)
+
+func get_host_id() -> int:
+	return Steam.getLobbyOwner(id)
 
 func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:

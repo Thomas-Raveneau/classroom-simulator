@@ -22,7 +22,7 @@ func _ready() -> void:
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
-	refresh_players()
+	#refresh_players()
 	loaded = true
 
 func _enter_tree() -> void:
@@ -37,7 +37,6 @@ func _enter_tree() -> void:
 
 
 func _on_player_connected(player: NetworkUser) -> void:
-	print("UI PLAYER CONNECTED")
 	var lobby_player_instance = lobby_player_component.instantiate()
 	lobby_player_instance.player = player
 	players_container.add_child(lobby_player_instance)
