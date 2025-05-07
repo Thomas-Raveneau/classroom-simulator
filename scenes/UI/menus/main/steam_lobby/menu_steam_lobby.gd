@@ -13,6 +13,7 @@ const lobby_player_component: PackedScene = preload(
 @onready var start_button: Button = $StartButton
 
 var loaded: bool = false
+var player_instances: Dictionary = {}
 
 func _ready() -> void:
 	if !NetworkManager.local_user.is_host:
@@ -22,7 +23,7 @@ func _ready() -> void:
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
 	refresh_friends()
-	#refresh_players()
+	refresh_players()
 	loaded = true
 
 func _enter_tree() -> void:
@@ -35,19 +36,17 @@ func _enter_tree() -> void:
 		private_button.show()
 		start_button.show()
 
-
 func _on_player_connected(player: NetworkUser) -> void:
+	if player_instances.has(player.peer_id):
+		return
 	var lobby_player_instance = lobby_player_component.instantiate()
 	lobby_player_instance.player = player
 	players_container.add_child(lobby_player_instance)
+	player_instances[player.peer_id] = lobby_player_instance
 	refresh_friends()
 
 func _on_player_disconnected(player: NetworkUser) -> void:
-	for child in players_container.get_children():
-		if child.player.peer_id != player.peer_id:
-			continue
-		child.queue_free()
-		break
+	player_instances[player.peer_id].queue_free()
 	refresh_friends()
 
 func refresh_players() -> void:
@@ -56,6 +55,7 @@ func refresh_players() -> void:
 		var lobby_player_instance = lobby_player_component.instantiate()
 		lobby_player_instance.player = player
 		players_container.add_child(lobby_player_instance)
+		player_instances[player_id] = lobby_player_instance
 
 func refresh_friends() -> void:
 	for child: Node in friends_container.get_children():
@@ -77,3 +77,6 @@ func _on_private_button_toggled(private: bool) -> void:
 
 func _on_start_button_pressed() -> void:
 	NetworkManager.start_game()
+
+func _exit_tree() -> void:
+	player_instances.clear()

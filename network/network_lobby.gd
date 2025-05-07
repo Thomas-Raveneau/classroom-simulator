@@ -18,7 +18,6 @@ func set_player(player: NetworkUser) -> void:
 	if players.has(player.peer_id):
 		return
 	players[player.peer_id] = player
-	print("PLAYER SET")
 	player_connected.emit(player)
 
 func has_steam_user(steam_id: int) -> bool:
