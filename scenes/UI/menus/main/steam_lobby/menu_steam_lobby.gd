@@ -37,13 +37,13 @@ func _enter_tree() -> void:
 
 func _on_player_connected(player: NetworkUser) -> void:
 	print("UI PLAYER CONNECTED")
-	var lobby_player_instance: UiLobbyPlayer = lobby_player_component.instantiate()
+	var lobby_player_instance = lobby_player_component.instantiate()
 	lobby_player_instance.player = player
 	players_container.add_child(lobby_player_instance)
 	refresh_friends()
 
 func _on_player_disconnected(player: NetworkUser) -> void:
-	for child: UiLobbyPlayer in players_container.get_children():
+	for child in players_container.get_children():
 		if child.player.peer_id != player.peer_id:
 			continue
 		child.queue_free()

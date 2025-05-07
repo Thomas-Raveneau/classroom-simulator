@@ -9,11 +9,12 @@ func _ready() -> void:
 	steam = SteamManager.new()
 	lobby = NetworkLobby.new()
 	local_user = NetworkUser.new()
+	local_user.set_steam(steam.get_local_user())
 	peer = SteamMultiplayerPeer.new()
 	add_child(steam)
 	add_child(lobby)
-	steam.lobby.on_created.connect(_on_lobby_joined.bind(true))
-	steam.lobby.on_joined.connect(_on_lobby_joined.bind(false))
+	steam.lobby.on_created.connect(_on_lobby_joined)
+	steam.lobby.on_joined.connect(_on_lobby_joined)
 	steam.lobby.on_left.connect(_on_lobby_left)
 
 func start_game() -> void:
@@ -28,8 +29,7 @@ func reset_multiplayer_peer() -> void:
 func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
-func _on_lobby_joined(is_host: bool) -> void:
-	
+func _on_lobby_joined() -> void:
 	multiplayer.multiplayer_peer = peer
 	local_user.peer_id = peer.get_unique_id()
 	lobby.set_player(local_user)

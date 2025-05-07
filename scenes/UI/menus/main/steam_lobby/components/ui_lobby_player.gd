@@ -1,4 +1,3 @@
-class_name UiLobbyPlayer
 extends HBoxContainer
 
 @onready var name_label: Label = $NameLabel
@@ -10,6 +9,6 @@ func _ready() -> void:
 	if !player:
 		queue_free()
 		return
-	player.text = player.name
+	name_label.text = player.name
 	if !player.is_host:
 		host_icon.hide()

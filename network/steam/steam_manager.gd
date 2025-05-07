@@ -15,7 +15,6 @@ func _ready() -> void:
 	var init_success: bool = Steam.steamInit()
 	if !init_success || !Steam.isSubscribed():
 		get_tree().quit()
-	init_local_user()
 	lobby = SteamLobby.new()
 	network = SteamNetwork.new()
 	add_child(lobby)
@@ -27,10 +26,10 @@ func _process(_delta: float) -> void:
 func is_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()
 
-func init_local_user() -> void:
+func get_local_user() -> SteamUser:
 	var steam_user := SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
-	NetworkManager.local_user.set_steam(steam_user)
-	NetworkManager.local_user.steam.refresh_friends()
+	steam_user.refresh_friends()
+	return steam_user
 
 func _exit_tree():
 	lobby.leave()
