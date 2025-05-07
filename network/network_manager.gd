@@ -22,7 +22,6 @@ func start_game() -> void:
 
 func reset_multiplayer_peer() -> void:
 	multiplayer.multiplayer_peer = null
-	peer.close()
 	peer = SteamMultiplayerPeer.new()
 
 @rpc("authority", "call_local", "reliable")
@@ -30,10 +29,11 @@ func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
 func _on_lobby_joined() -> void:
+	print("LOBBY JOINED")
 	multiplayer.multiplayer_peer  = peer
 	local_user.peer_id = peer.get_unique_id()
 	lobby.set_player(local_user)
 
 func _on_lobby_left() -> void:
-	lobby = NetworkLobby.new()
+	lobby.players = {}
 	reset_multiplayer_peer()

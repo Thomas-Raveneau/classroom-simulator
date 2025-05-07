@@ -50,7 +50,6 @@ func leave() -> void:
 	#for member_id in members.keys():
 		#NetworkManager.steam.network.close_session(members[member_id])
 	Steam.leaveLobby(id)
-	NetworkManager.reset_multiplayer_peer()
 	id = 0
 	lobby_name = ""
 	on_left.emit()

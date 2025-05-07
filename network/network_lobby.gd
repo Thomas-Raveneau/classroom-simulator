@@ -42,9 +42,9 @@ func _on_player_disconnected(peer_id: int):
 
 func _on_connected_ok():
 	var peer_id = NetworkManager.local_user.peer_id
+	print("CONNECTED OK ", peer_id, players)
 	players[peer_id].connected = true
 	player_connected.emit(players[peer_id])
-	print("CONNECTED OK ", players)
 
 func _on_connected_fail():
 	multiplayer.multiplayer_peer = null
