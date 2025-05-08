@@ -19,7 +19,6 @@ func _ready() -> void:
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
 		start_button.hide()
-	NetworkManager.steam.lobby.on_host_changed.connect(_on_host_changed)
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
@@ -67,10 +66,6 @@ func _on_player_connected(player: NetworkPlayer) -> void:
 func _on_player_disconnected(player: NetworkPlayer) -> void:
 	player_instances[player.peer_id].queue_free()
 	refresh_friends()
-
-func _on_host_changed(new_host: NetworkPlayer) -> void:
-	for player_instance_id in player_instances.keys():
-		player_instances[player_instance_id].set_host(player_instance_id == new_host.peer_id)
 
 func _on_back_button_pressed() -> void:
 	NetworkManager.steam.lobby.leave()
