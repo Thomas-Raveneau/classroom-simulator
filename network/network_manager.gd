@@ -33,19 +33,12 @@ func reset_local_player() -> void:
 func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
 
-@rpc("authority", "call_remote", "reliable")
-func close_server() -> void:
-	steam.lobby.leave()
-	get_tree().change_scene_to_file(GameSettings.MAIN_MENU_PATH)
-
 func _on_lobby_joined() -> void:
 	multiplayer.multiplayer_peer = peer
 	local_user.peer_id = peer.get_unique_id()
 	lobby.set_player(local_user)
 
 func _on_lobby_left() -> void:
-	if local_user.is_host:
-		close_server.rpc()
 	lobby.players = {}
 	reset_local_player()
 	reset_multiplayer_peer()
