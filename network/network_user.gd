@@ -1,4 +1,4 @@
-class_name NetworkUser
+class_name NetworkPlayer
 
 var steam: SteamUser
 var name: String = ""

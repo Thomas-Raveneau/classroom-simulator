@@ -3,7 +3,7 @@ extends HBoxContainer
 @onready var name_label: Label = $NameLabel
 @onready var host_icon: TextureRect = $HostIcon
 
-var player: NetworkUser
+var player: NetworkPlayer
 
 func _ready() -> void:
 	if !player:

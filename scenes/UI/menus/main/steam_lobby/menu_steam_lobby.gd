@@ -36,7 +36,7 @@ func _enter_tree() -> void:
 		private_button.show()
 		start_button.show()
 
-func _on_player_connected(player: NetworkUser) -> void:
+func _on_player_connected(player: NetworkPlayer) -> void:
 	if player_instances.has(player.peer_id):
 		return
 	var lobby_player_instance = lobby_player_component.instantiate()
@@ -45,13 +45,13 @@ func _on_player_connected(player: NetworkUser) -> void:
 	player_instances[player.peer_id] = lobby_player_instance
 	refresh_friends()
 
-func _on_player_disconnected(player: NetworkUser) -> void:
+func _on_player_disconnected(player: NetworkPlayer) -> void:
 	player_instances[player.peer_id].queue_free()
 	refresh_friends()
 
 func refresh_players() -> void:
 	for player_id in NetworkManager.lobby.players.keys():
-		var player: NetworkUser = NetworkManager.lobby.players[player_id]
+		var player: NetworkPlayer = NetworkManager.lobby.players[player_id]
 		var lobby_player_instance = lobby_player_component.instantiate()
 		lobby_player_instance.player = player
 		players_container.add_child(lobby_player_instance)

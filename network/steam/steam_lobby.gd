@@ -48,7 +48,7 @@ func leave() -> void:
 			#break
 		#Steam.setLobbyOwner(id, new_host.id)
 	#for player_id in NetworkManager.lobby.players.keys():
-		#var player: NetworkUser = NetworkManager.lobby.players[player_id]
+		#var player: NetworkPlayer = NetworkManager.lobby.players[player_id]
 		#NetworkManager.steam.network.close_session(player.steam)
 	Steam.leaveLobby(id)
 	id = 0

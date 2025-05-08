@@ -1,8 +1,8 @@
 class_name NetworkLobby
 extends Node
 
-signal player_connected(player: NetworkUser)
-signal player_disconnected(player: NetworkUser)
+signal player_connected(player: NetworkPlayer)
+signal player_disconnected(player: NetworkPlayer)
 signal server_disconnected
 
 var players: Dictionary = {}
@@ -14,14 +14,14 @@ func _ready() -> void:
 	multiplayer.connection_failed.connect(_on_connected_fail)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
 
-func set_player(player: NetworkUser) -> void:
+func set_player(player: NetworkPlayer) -> void:
 	if players.has(player.peer_id):
 		return
 	players[player.peer_id] = player
 
 func has_steam_user(steam_id: int) -> bool:
 	for player_id in players.keys():
-		var player: NetworkUser = players[player_id]
+		var player: NetworkPlayer = players[player_id]
 		if player.steam.id == steam_id:
 			return true
 	return false
@@ -29,13 +29,13 @@ func has_steam_user(steam_id: int) -> bool:
 func _on_player_connected(peer_id: int) -> void:
 	var steam_id: int = NetworkManager.peer.get_steam64_from_peer_id(peer_id)
 	var steam_user := SteamUser.new(steam_id)
-	var player := NetworkUser.new(steam_user)
+	var player := NetworkPlayer.new(steam_user)
 	player.is_host = steam_id == NetworkManager.steam.lobby.get_host_id()
 	players[player.peer_id] = player
 	player_connected.emit(player)
 
 func _on_player_disconnected(peer_id: int):
-	var disconnected_player: NetworkUser = players[peer_id]
+	var disconnected_player: NetworkPlayer = players[peer_id]
 	players.erase(peer_id)
 	player_disconnected.emit(disconnected_player)
 

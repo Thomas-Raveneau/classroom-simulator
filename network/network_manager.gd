@@ -2,14 +2,14 @@ extends Node
 
 var steam: SteamManager
 var lobby: NetworkLobby
-var local_user: NetworkUser
+var local_user: NetworkPlayer
 var peer: SteamMultiplayerPeer
 
 func _ready() -> void:
 	steam = SteamManager.new()
 	lobby = NetworkLobby.new()
 	peer = SteamMultiplayerPeer.new()
-	local_user = NetworkUser.new()
+	local_user = NetworkPlayer.new()
 	local_user.set_steam(steam.get_local_user())
 	add_child(steam)
 	add_child(lobby)
