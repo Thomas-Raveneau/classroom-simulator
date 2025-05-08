@@ -12,3 +12,9 @@ func _ready() -> void:
 	name_label.text = player.name
 	if !player.is_host:
 		host_icon.hide()
+
+func set_host(is_host: bool = true) -> void:
+	if is_host:
+		host_icon.show()
+	else:
+		host_icon.hide()

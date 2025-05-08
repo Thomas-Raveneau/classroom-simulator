@@ -4,6 +4,7 @@ extends Node
 signal on_created
 signal on_joined
 signal on_left
+signal on_host_changed(new_host: NetworkPlayer)
 signal on_invite_received(user: SteamUser, lobby_id: int)
 
 var id: int = 0
@@ -40,17 +41,15 @@ func auto_join() -> void:
 func leave() -> void:
 	if id == 0:
 		return
-	#if NetworkManager.local_user.is_host && NetworkManager.lobby.players.size() > 1:
-		#var new_host: SteamUser
-		#for member_id in members.keys():
-			#if member_id ==  NetworkManager.local_user.steam.id:
-				#continue
-			#new_host = members[member_id]
-			#break
-		#Steam.setLobbyOwner(id, new_host.id)
-	#for player_id in NetworkManager.lobby.players.keys():
-		#var player: NetworkPlayer = NetworkManager.lobby.players[player_id]
-		#NetworkManager.steam.network.close_session(player.steam)
+	if NetworkManager.local_user.is_host && users_count > 1:
+		var new_host: NetworkPlayer
+		for player_id in NetworkManager.lobby.players.keys():
+			var player: NetworkPlayer = NetworkManager.lobby.players[player_id]
+			if player.steam.id ==  NetworkManager.local_user.steam.id:
+				continue
+			new_host = player
+			break
+		Steam.setLobbyOwner(id, new_host.steam.id)
 	Steam.leaveLobby(id)
 	id = 0
 	users_count = 0
@@ -72,6 +71,18 @@ func set_private(private: bool) -> void:
 
 func get_host_id() -> int:
 	return Steam.getLobbyOwner(id)
+
+func refresh_host() -> void:
+	var host_steam_id: int = get_host_id()
+	var host_peer_id: int = NetworkManager.peer.get_peer_id_from_steam64(host_steam_id)
+	if NetworkManager.lobby.players[host_peer_id].is_host:
+		return
+	if host_steam_id == NetworkManager.local_user.steam.id && !NetworkManager.local_user.is_host:
+		NetworkManager.local_user.is_host = true
+		lobby_name = "%s's lobby" %  NetworkManager.local_user.steam.name
+		Steam.setLobbyData(id, "name", lobby_name)
+	NetworkManager.lobby.players[host_peer_id].is_host = true
+	on_host_changed.emit(NetworkManager.lobby.players[host_peer_id])
 
 func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:
@@ -96,11 +107,6 @@ func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:
 func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	if !success || id == 0:
 		return
-	var owner_id: int = Steam.getLobbyOwner(id)
-	if owner_id == NetworkManager.local_user.steam.id && !NetworkManager.local_user.is_host:
-		NetworkManager.local_user.is_host = true
-		lobby_name = "%s's lobby" %  NetworkManager.local_user.steam.name
-		Steam.setLobbyData(id, "name", lobby_name)
-		return
+	refresh_host()
 	lobby_name = Steam.getLobbyData(id, "name")
 	users_count = Steam.getNumLobbyMembers(id)

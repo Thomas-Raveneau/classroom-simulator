@@ -19,6 +19,7 @@ func _ready() -> void:
 	if !NetworkManager.local_user.is_host:
 		private_button.hide()
 		start_button.hide()
+	NetworkManager.steam.lobby.on_host_changed.connect(_on_host_changed)
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends)
@@ -35,19 +36,6 @@ func _enter_tree() -> void:
 	else:
 		private_button.show()
 		start_button.show()
-
-func _on_player_connected(player: NetworkPlayer) -> void:
-	if player_instances.has(player.peer_id):
-		return
-	var lobby_player_instance = lobby_player_component.instantiate()
-	lobby_player_instance.player = player
-	players_container.add_child(lobby_player_instance)
-	player_instances[player.peer_id] = lobby_player_instance
-	refresh_friends()
-
-func _on_player_disconnected(player: NetworkPlayer) -> void:
-	player_instances[player.peer_id].queue_free()
-	refresh_friends()
 
 func refresh_players() -> void:
 	for player_id in NetworkManager.lobby.players.keys():
@@ -66,6 +54,23 @@ func refresh_friends() -> void:
 		var friend_invite_instance = friend_invite_component.instantiate()
 		friend_invite_instance.friend = steam_friend
 		friends_container.add_child(friend_invite_instance)
+
+func _on_player_connected(player: NetworkPlayer) -> void:
+	if player_instances.has(player.peer_id):
+		return
+	var lobby_player_instance = lobby_player_component.instantiate()
+	lobby_player_instance.player = player
+	players_container.add_child(lobby_player_instance)
+	player_instances[player.peer_id] = lobby_player_instance
+	refresh_friends()
+
+func _on_player_disconnected(player: NetworkPlayer) -> void:
+	player_instances[player.peer_id].queue_free()
+	refresh_friends()
+
+func _on_host_changed(new_host: NetworkPlayer) -> void:
+	for player_instance_id in player_instances.keys():
+		player_instances[player_instance_id].set_host(player_instance_id == new_host.peer_id)
 
 func _on_back_button_pressed() -> void:
 	NetworkManager.steam.lobby.leave()

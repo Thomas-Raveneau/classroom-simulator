@@ -25,6 +25,10 @@ func reset_multiplayer_peer() -> void:
 	multiplayer.multiplayer_peer = null
 	peer = SteamMultiplayerPeer.new()
 
+func reset_local_player() -> void:
+	local_user.is_host = false
+	local_user.peer_id = 0
+
 @rpc("authority", "call_local", "reliable")
 func change_scene(scene_file: String) -> void:
 	get_tree().change_scene_to_file(scene_file)
@@ -36,4 +40,5 @@ func _on_lobby_joined() -> void:
 
 func _on_lobby_left() -> void:
 	lobby.players = {}
+	reset_local_player()
 	reset_multiplayer_peer()
