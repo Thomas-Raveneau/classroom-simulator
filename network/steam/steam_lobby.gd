@@ -8,6 +8,7 @@ signal on_invite_received(user: SteamUser, lobby_id: int)
 
 var id: int = 0
 var lobby_name: String = ""
+var users_count: int = 0
 
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
@@ -52,6 +53,7 @@ func leave() -> void:
 		#NetworkManager.steam.network.close_session(player.steam)
 	Steam.leaveLobby(id)
 	id = 0
+	users_count = 0
 	lobby_name = ""
 	on_left.emit()
 
@@ -76,6 +78,7 @@ func _on_created(result: Steam.Result, lobby_id: int) -> void:
 		return
 	id = lobby_id
 	lobby_name = "%s's lobby" % NetworkManager.local_user.steam.name
+	users_count = Steam.getNumLobbyMembers(id)
 	Steam.setLobbyData(id, "name", lobby_name)
 	on_created.emit()
 
@@ -83,13 +86,14 @@ func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
 		return
 	id = lobby_id
+	users_count = Steam.getNumLobbyMembers(id)
 	on_joined.emit()
 
 func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:
 	var user: SteamUser = SteamUser.new(user_id)
 	on_invite_received.emit(user, lobby_id)
 
-func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
+func _on_lobby_update(success: int, lobby_id: int, _user_id: int) -> void:
 	if !success || id == 0:
 		return
 	var owner_id: int = Steam.getLobbyOwner(id)
@@ -99,3 +103,4 @@ func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 		Steam.setLobbyData(id, "name", lobby_name)
 		return
 	lobby_name = Steam.getLobbyData(id, "name")
+	users_count = Steam.getNumLobbyMembers(id)

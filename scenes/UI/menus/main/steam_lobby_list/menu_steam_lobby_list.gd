@@ -9,7 +9,7 @@ const friend_lobby_component: PackedScene = preload(
 func _ready() -> void:
 	NetworkManager.local_user.steam.on_friends_refreshed.connect(refresh_friends_lobbies)
 	NetworkManager.local_user.steam.on_friend_lobby_update.connect(refresh_friends_lobbies)
-	NetworkManager.steam.lobby.on_joined.connect(_on_lobby_joined)
+	NetworkManager.lobby.on_loaded.connect(_on_lobby_loaded)
 	refresh_friends_lobbies()
 
 func refresh_friends_lobbies() -> void:
@@ -23,7 +23,7 @@ func refresh_friends_lobbies() -> void:
 		friend_lobby_instance.friend_lobby = friend_lobby
 		lobbies_container.add_child(friend_lobby_instance)
 
-func _on_lobby_joined():
+func _on_lobby_loaded():
 	get_tree().change_scene_to_file(
 		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn"
 	)

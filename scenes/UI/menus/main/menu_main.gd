@@ -2,14 +2,14 @@ extends Control
 
 func _ready() -> void:
 	NetworkManager.steam.lobby.on_created.connect(_on_lobby_created)
-	NetworkManager.steam.lobby.on_joined.connect(_on_lobby_joined)
+	NetworkManager.lobby.on_loaded.connect(_on_lobby_loaded)
 
 func _on_lobby_created() -> void:
 	get_tree().change_scene_to_file(
 		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn"
 	)
 
-func _on_lobby_joined() -> void:
+func _on_lobby_loaded() -> void:
 	get_tree().change_scene_to_file(
 		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn"
 	)
