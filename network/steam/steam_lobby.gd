@@ -93,7 +93,7 @@ func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:
 	var user: SteamUser = SteamUser.new(user_id)
 	on_invite_received.emit(user, lobby_id)
 
-func _on_lobby_update(success: int, lobby_id: int, _user_id: int) -> void:
+func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
 	if !success || id == 0:
 		return
 	var owner_id: int = Steam.getLobbyOwner(id)

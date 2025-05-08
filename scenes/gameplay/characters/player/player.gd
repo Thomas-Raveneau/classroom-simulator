@@ -6,15 +6,22 @@ const JUMP_VELOCITY = 4.5
 const ROTATION_SPEED = 20
 
 @onready var meshes = $Meshes
-@onready var camera = $Camera
+@onready var camera: Camera3D = $Camera
+
+func _ready() -> void:
+	camera.current = is_multiplayer_authority()
 
 func _input(event: InputEvent) -> void:
+	if !is_multiplayer_authority():
+		return
 	if(!event.is_action_type()):
 		return
 	if event.is_action_pressed("jump") and is_on_floor():
 		velocity.y = JUMP_VELOCITY
 
 func _physics_process(delta: float) -> void:
+	if !is_multiplayer_authority():
+		return
 	movement(delta)
 	rotate_player(delta)
 
