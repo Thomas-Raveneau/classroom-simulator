@@ -1,7 +1,8 @@
-[gd_scene load_steps=7 format=3 uid="uid://bjlbml75quh0q"]
+[gd_scene load_steps=8 format=3 uid="uid://bjlbml75quh0q"]
 
 [ext_resource type="MeshLibrary" uid="uid://bdsrytkfmcwbg" path="res://scenes/maps/prototype/mesh_library/prototype_mesh_library.tres" id="1_ouhv6"]
 [ext_resource type="Script" uid="uid://20kuxyquvu37" path="res://scenes/gameplay/game/game_manager.gd" id="1_q7rny"]
+[ext_resource type="Script" uid="uid://rwytyooav0q2" path="res://scenes/gameplay/game/spawn_manager.gd" id="2_blwkt"]
 [ext_resource type="PackedScene" uid="uid://sh07mxo33ehw" path="res://scenes/gameplay/characters/player/player.tscn" id="2_q7rny"]
 
 [sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_ouhv6"]
@@ -23,14 +24,15 @@ glow_enabled = true
 
 [node name="MapPrototype" type="Node3D"]
 
-[node name="GameManager" type="Node" parent="." node_paths=PackedStringArray("players_container")]
+[node name="GameManager" type="Node" parent="."]
 script = ExtResource("1_q7rny")
-player_scene = ExtResource("2_q7rny")
-players_container = NodePath("../Players")
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." node_paths=PackedStringArray("players_container")]
 _spawnable_scenes = PackedStringArray("uid://sh07mxo33ehw")
 spawn_path = NodePath("../Players")
+script = ExtResource("2_blwkt")
+player_scene = ExtResource("2_q7rny")
+players_container = NodePath("../Players")
 
 [node name="Rendering" type="Node" parent="."]
 
