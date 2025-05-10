@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 GameSettings="*res://config/game_settings.gd"
 NetworkManager="*res://network/network_manager.gd"
+SceneManager="*res://scenes/managers/scene_manager.gd"
 
 [display]
 
