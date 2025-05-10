@@ -16,7 +16,6 @@ func _ready() -> void:
 	steam.lobby.on_created.connect(_on_lobby_joined)
 	steam.lobby.on_joined.connect(_on_lobby_joined)
 	steam.lobby.on_left.connect(_on_lobby_left)
-	steam.lobby.on_server_close.connect(_on_server_close.rpc)
 
 func start_game() -> void:
 	change_scene.rpc("res://scenes/maps/prototype/map_prototype.tscn")
@@ -43,8 +42,3 @@ func _on_lobby_left() -> void:
 	lobby.players = {}
 	reset_local_player()
 	reset_multiplayer_peer()
-
-@rpc("authority", "call_local", "reliable")
-func _on_server_close() -> void:
-	local_user.is_host = false
-	steam.lobby.leave()

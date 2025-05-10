@@ -14,7 +14,6 @@ func _ready() -> void:
 	multiplayer.connected_to_server.connect(_on_connected_ok)
 	multiplayer.connection_failed.connect(_on_connected_fail)
 	multiplayer.server_disconnected.connect(_on_server_disconnected)
-	NetworkManager.peer.peer_disconnected.connect(_on_server_disconnected)
 
 func set_player(player: NetworkPlayer) -> void:
 	if players.has(player.peer_id):
@@ -43,6 +42,8 @@ func _on_player_connected(peer_id: int) -> void:
 
 func _on_player_disconnected(peer_id: int):
 	var disconnected_player: NetworkPlayer = players[peer_id]
+	if disconnected_player.is_host:
+		NetworkManager.steam.lobby.leave()
 	players.erase(peer_id)
 	player_disconnected.emit(disconnected_player)
 	check_if_loaded()
