@@ -64,7 +64,10 @@ func _on_player_connected(player: NetworkPlayer) -> void:
 	refresh_friends()
 
 func _on_player_disconnected(player: NetworkPlayer) -> void:
+	if !player_instances[player.peer_id]:
+		return
 	player_instances[player.peer_id].queue_free()
+	player_instances.erase(player.peer_id)
 	refresh_friends()
 
 func _on_back_button_pressed() -> void:
