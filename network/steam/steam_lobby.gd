@@ -13,8 +13,6 @@ var users_count: int = 0
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
 	Steam.lobby_joined.connect(_on_joined)
-	NetworkManager.peer.lobby_created.connect(_on_created)
-	NetworkManager.peer.lobby_data_update.connect(_on_lobby_update)
 	auto_join()
 
 func create() -> void:
@@ -25,6 +23,8 @@ func create() -> void:
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
 		GameSettings.MAX_PLAYERS
 	)
+	NetworkManager.peer.lobby_created.connect(_on_created)
+	NetworkManager.peer.lobby_data_update.connect(_on_lobby_update)
 
 func join(lobby_id: int) -> void:
 	NetworkManager.peer.connect_lobby(lobby_id)

@@ -23,10 +23,6 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	Steam.run_callbacks()
 
-func _notification(notif: int) -> void:
-	if notif == NOTIFICATION_WM_CLOSE_REQUEST:
-		lobby.leave()
-
 func is_enabled():
 	return OS.has_feature("steam") or OS.is_debug_build()
 
