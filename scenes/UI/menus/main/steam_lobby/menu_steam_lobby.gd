@@ -69,7 +69,6 @@ func _on_player_disconnected(player: NetworkPlayer) -> void:
 
 func _on_back_button_pressed() -> void:
 	NetworkManager.steam.lobby.leave()
-	get_tree().change_scene_to_file("res://scenes/UI/menus/main/menu_main.tscn")
 
 func _on_private_button_toggled(private: bool) -> void:
 	NetworkManager.steam.lobby.set_private(private)

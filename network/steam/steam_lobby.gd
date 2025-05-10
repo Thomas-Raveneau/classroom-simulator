@@ -4,6 +4,7 @@ extends Node
 signal on_created
 signal on_joined
 signal on_left
+signal on_server_close
 signal on_invite_received(user: SteamUser, lobby_id: int)
 
 var id: int = 0
@@ -20,6 +21,7 @@ func _ready() -> void:
 func create() -> void:
 	if id != 0:
 		return
+	print('CREATING')
 	NetworkManager.local_user.is_host = true
 	NetworkManager.peer.create_lobby(
 		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
@@ -40,6 +42,11 @@ func auto_join() -> void:
 func leave() -> void:
 	if id == 0:
 		return
+	if NetworkManager.local_user.is_host:
+		print('CLOSING')
+		on_server_close.emit()
+		return
+	print("LEAVE")
 	Steam.leaveLobby(id)
 	id = 0
 	users_count = 0
@@ -65,6 +72,7 @@ func get_host_id() -> int:
 func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:
 		return
+	print('CREATED')
 	id = lobby_id
 	lobby_name = "%s's lobby" % NetworkManager.local_user.steam.name
 	users_count = Steam.getNumLobbyMembers(id)

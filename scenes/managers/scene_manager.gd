@@ -1,6 +1,15 @@
 extends Node
 
+var main_menu_scene: PackedScene = preload(GameSettings.MAIN_MENU_PATH)
 var loading_screen_scene: PackedScene = preload("res://scenes/UI/screens/loading/screen_loading.tscn")
+
+func _ready() -> void:
+	NetworkManager.steam.lobby.on_left.connect(load_main_menu)
+
+func load_main_menu() -> void:
+	if !get_tree(): # check if window is closing
+		return
+	get_tree().change_scene_to_packed(main_menu_scene)
 
 func load_scene(
 	current_scene: Node, 
