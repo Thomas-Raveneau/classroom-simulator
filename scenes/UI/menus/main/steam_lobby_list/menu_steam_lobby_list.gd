@@ -19,7 +19,7 @@ func refresh_friends_lobbies() -> void:
 		if friend_lobby.id == 0 || !friend_lobby.name:
 			continue
 		var friend_lobby_instance: UiFriendLobby = friend_lobby_component.instantiate()
-		friend_lobby_instance.setup(friend_lobby, get_parent())
+		friend_lobby_instance.setup(friend_lobby, self)
 		lobbies_container.add_child(friend_lobby_instance)
 
 func _on_back_button_pressed() -> void:
