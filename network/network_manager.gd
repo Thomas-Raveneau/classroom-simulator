@@ -18,7 +18,7 @@ func _ready() -> void:
 	steam.lobby.on_left.connect(_on_lobby_left)
 
 func start_game() -> void:
-	change_scene.rpc("res://scenes/maps/prototype/map_prototype.tscn")
+	load_scene.rpc("res://scenes/maps/prototype/map_prototype.tscn")
 
 func reset_multiplayer_peer() -> void:
 	peer.close()
@@ -30,8 +30,8 @@ func reset_local_player() -> void:
 	local_user.peer_id = 0
 
 @rpc("authority", "call_local", "reliable")
-func change_scene(scene_file: String) -> void:
-	get_tree().change_scene_to_file(scene_file)
+func load_scene(scene_file: String) -> void:
+	SceneManager.load_scene(scene_file)
 
 func _on_lobby_joined() -> void:
 	multiplayer.multiplayer_peer = peer

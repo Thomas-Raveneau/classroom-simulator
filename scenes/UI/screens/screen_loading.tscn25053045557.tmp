@@ -1,6 +1,23 @@
 [gd_scene load_steps=2 format=3 uid="uid://baemedrrkr5f3"]
 
-[ext_resource type="Script" uid="uid://o000h70uouop" path="res://scenes/UI/screens/loading/screen_loading.gd" id="1_b08j2"]
+[sub_resource type="GDScript" id="GDScript_rdmix"]
+script/source = "class_name LoadingScreen
+extends Control
+
+func _ready() -> void:
+	
+
+func setup(
+	_timeout_seconds: int,
+	_fallback_scene: PackedScene,
+) -> void:
+	fallback_scene = _fallback_scene
+	timeout_seconds = _timeout_seconds
+
+func _on_failed() -> void:
+	get_tree().change_scene_to_packed(fallback_scene)
+	queue_free()
+"
 
 [node name="ScreenLoading" type="Control"]
 layout_mode = 3
@@ -9,7 +26,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-script = ExtResource("1_b08j2")
+script = SubResource("GDScript_rdmix")
 
 [node name="ProgressBar" type="ProgressBar" parent="."]
 layout_mode = 1

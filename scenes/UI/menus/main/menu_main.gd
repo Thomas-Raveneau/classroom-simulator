@@ -3,9 +3,8 @@ extends Control
 func _on_create_lobby_button_pressed() -> void:
 	NetworkManager.steam.lobby.create()
 	SceneManager.load_scene(
-		self,
+		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn",
 		NetworkManager.steam.lobby.on_created,
-		load("res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn")
 	)
 
 func _on_join_lobby_button_pressed() -> void:

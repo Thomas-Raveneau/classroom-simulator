@@ -23,7 +23,6 @@ func setup(_user: SteamUser, _lobby_id: int, _current_scene: Node) -> void:
 func _on_accept_button_pressed() -> void:
 	NetworkManager.steam.lobby.join(lobby_id)
 	SceneManager.load_scene(
-		current_scene,
+		"res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn",
 		NetworkManager.lobby.on_loaded,
-		load("res://scenes/UI/menus/main/steam_lobby/menu_steam_lobby.tscn")
 	)
