@@ -10,7 +10,7 @@ var current_scene: Node
 
 func _ready() -> void:
 	if !user || !user.name || lobby_id == 0 || !current_scene:
-		printerr("ui_steam_invite not set up")
+		push_error("ui_steam_invite not set up")
 		queue_free()
 		return
 	name_label.text = user.name

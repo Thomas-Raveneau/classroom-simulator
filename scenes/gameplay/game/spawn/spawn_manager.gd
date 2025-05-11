@@ -3,6 +3,7 @@ extends MultiplayerSpawner
 
 @export var player_scene: PackedScene
 @export var players_container: Node3D
+@export var spawn_points: Array[SpawnPoint]
 
 var player_instances : Dictionary = {}
 
@@ -13,6 +14,9 @@ func _ready() -> void:
 	if !player_scene:
 		push_error("player_scene not set")
 		return
+	if spawn_points.size() == 0:
+		push_error("set at least one spawn point")
+		return
 	spawn_function = spawn_player
 	if !is_multiplayer_authority():
 		return
@@ -21,9 +25,21 @@ func _ready() -> void:
 	for player_id in NetworkManager.lobby.players.keys():
 		spawn(player_id) 
 
+func get_available_spawn_point() -> SpawnPoint:
+	var spawn_point: SpawnPoint = null
+	while !spawn_point:
+		var random_spawn_point: SpawnPoint = spawn_points.pick_random()
+		if !random_spawn_point.is_spawnable:
+			continue 
+		spawn_point = random_spawn_point
+	return spawn_point
+
 func spawn_player(player_peer_id: int) -> Player:
+	var spawn_point: SpawnPoint = get_available_spawn_point()
 	var player_instance: Player = player_scene.instantiate()
 	player_instance.set_multiplayer_authority(player_peer_id)
+	player_instance.position = spawn_point.position
+	spawn_point.use()
 	player_instances[player_peer_id] = player_instance
 	return player_instance
 

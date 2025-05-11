@@ -8,7 +8,7 @@ var current_scene: Node
 
 func _ready() -> void:
 	if !friend_lobby || !current_scene:
-		printerr("UiFriendLobby not set up")
+		push_error("UiFriendLobby not set up")
 		queue_free()
 		return
 	name_label.text = friend_lobby.name
