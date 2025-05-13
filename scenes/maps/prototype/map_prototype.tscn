@@ -29,7 +29,6 @@ glow_enabled = true
 script = ExtResource("1_q7rny")
 
 [node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." node_paths=PackedStringArray("players_container", "spawn_points")]
-_spawnable_scenes = PackedStringArray("uid://sh07mxo33ehw")
 spawn_path = NodePath("../Players")
 script = ExtResource("2_blwkt")
 player_scene = ExtResource("2_q7rny")

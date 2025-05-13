@@ -1,6 +1,6 @@
 extends Node
 
-signal on_load_confirmed
+signal on_players_ready
 
 const SERVER: int = 1
 
@@ -34,22 +34,22 @@ func reset_local_player() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func load_scene(scene_file: String) -> void:
-	SceneManager.load_scene(scene_file, on_load_confirmed)
+	if is_multiplayer_authority():
+		SceneManager.load_scene(scene_file, on_players_ready)
+	else:
+		SceneManager.load_scene(scene_file)
 	SceneManager.on_loaded.connect(_on_player_loaded_scene.rpc_id.bind(SERVER))
-
-@rpc("authority", "call_local", "reliable")
-func confirm_load() -> void:
-	on_load_confirmed.emit()
-	SceneManager.on_loaded.disconnect(_on_player_loaded_scene.rpc_id)
 
 @rpc("any_peer", "call_local", "reliable")
 func _on_player_loaded_scene() -> void:
+	if !is_multiplayer_authority():
+		return
 	var player_id: int = multiplayer.get_remote_sender_id()
 	players_ready += 1
 	if players_ready < lobby.players.size():
 		return
 	players_ready = 0
-	confirm_load.rpc()
+	on_players_ready.emit()
 
 func _on_lobby_joined() -> void:
 	multiplayer.multiplayer_peer = peer

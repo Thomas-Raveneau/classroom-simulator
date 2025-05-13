@@ -23,7 +23,7 @@ func _ready() -> void:
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
 	for player_id in NetworkManager.lobby.players.keys():
-		spawn(player_id) 
+		spawn(player_id)
 
 func get_available_spawn_point() -> SpawnPoint:
 	var spawn_point: SpawnPoint = null
