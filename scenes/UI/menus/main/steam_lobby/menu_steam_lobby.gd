@@ -78,7 +78,7 @@ func _on_private_button_toggled(private: bool) -> void:
 	private_button.text = "Private" if private else "Friends only"
 
 func _on_start_button_pressed() -> void:
-	NetworkManager.start_game()
+	NetworkManager.load_scene.rpc("res://scenes/maps/prototype/map_prototype.tscn")
 
 func _exit_tree() -> void:
 	player_instances.clear()

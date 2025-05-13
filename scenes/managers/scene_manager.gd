@@ -1,10 +1,13 @@
 extends Node
 
+signal on_loaded
+
 var loading_screen_scene: PackedScene = preload("res://scenes/UI/screens/screen_loading.tscn")
 
 var scene_path: String = ""
-var on_load_ready: Signal
-var is_ready_to_load: bool = false
+var confirm_load: Signal
+var is_loaded: bool = false
+var is_load_confirmed: bool = false
 var timeout_timer: Timer
 var loading_screen_instance: Node
 
@@ -14,9 +17,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if scene_path.is_empty():
 		return
-	if !is_ready_to_load:
-		return
 	if !is_scene_loaded():
+		return
+	if !is_load_confirmed:
 		return
 	change_to_loaded_scene()
 
@@ -30,11 +33,12 @@ func reset() -> void:
 	if loading_screen_instance:
 		loading_screen_instance.queue_free()
 		loading_screen_instance = null
-	if on_load_ready && on_load_ready.is_connected(_on_ready_to_load):
-		on_load_ready.disconnect(_on_ready_to_load)
-		on_load_ready = Signal()
+	if confirm_load && confirm_load.is_connected(_on_load_confirmed):
+		confirm_load.disconnect(_on_load_confirmed)
+		confirm_load = Signal()
 	scene_path = ""
-	is_ready_to_load = false
+	is_loaded = false
+	is_load_confirmed = false
 
 func cancel_load():
 	reset()
@@ -42,18 +46,18 @@ func cancel_load():
 
 func load_scene(
 	_scene_path: String,
-	_on_load_ready: Signal = Signal(),
+	_confirm_load: Signal = Signal(),
 	timeout_seconds: int = 30,
 ) -> void:
 	if !scene_path.is_empty():
 		push_error("a scene is already being loaded: ", scene_path)
 		return
 	scene_path = _scene_path
-	if _on_load_ready:
-		on_load_ready = _on_load_ready
-		on_load_ready.connect(_on_ready_to_load)
+	if _confirm_load:
+		confirm_load = _confirm_load
+		confirm_load.connect(_on_load_confirmed)
 	else:
-		is_ready_to_load = true
+		is_load_confirmed = true
 	if timeout_seconds > 0:
 		add_timeout_timer(timeout_seconds)
 	ResourceLoader.load_threaded_request(scene_path)
@@ -71,6 +75,8 @@ func add_timeout_timer(timeout_seconds: int) -> void:
 	add_child(timeout_timer)
 
 func is_scene_loaded() -> bool:
+	if is_loaded:
+		return true
 	var progress = []
 	var load_status : ResourceLoader.ThreadLoadStatus = \
 		ResourceLoader.load_threaded_get_status(scene_path, progress)
@@ -78,7 +84,11 @@ func is_scene_loaded() -> bool:
 	|| load_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 		cancel_load()
 		return false
-	return load_status == ResourceLoader.ThreadLoadStatus.THREAD_LOAD_LOADED
+	if load_status != ResourceLoader.ThreadLoadStatus.THREAD_LOAD_LOADED:
+		return false
+	on_loaded.emit()
+	is_loaded = true
+	return true
 
 func change_to_loaded_scene() -> void:
 	if !is_scene_loaded():
@@ -88,8 +98,8 @@ func change_to_loaded_scene() -> void:
 	get_tree().change_scene_to_packed(loaded_scene)
 	reset()
 
-func _on_ready_to_load() -> void:
-	is_ready_to_load = true
+func _on_load_confirmed() -> void:
+	is_load_confirmed = true
 
 func _on_load_timeout() -> void:
 	cancel_load()
