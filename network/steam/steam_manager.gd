@@ -23,10 +23,10 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	Steam.run_callbacks()
 
-func is_enabled():
+func is_enabled() -> bool:
 	return OS.has_feature("steam") or OS.is_debug_build()
 
 func get_local_user() -> SteamUser:
-	var steam_user := SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
+	var steam_user: SteamUser = SteamUser.new(Steam.getSteamID(), Steam.getPersonaName())
 	steam_user.refresh_friends()
 	return steam_user

@@ -2,15 +2,11 @@ class_name SpawnManager
 extends MultiplayerSpawner
 
 @export var player_scene: PackedScene
-@export var players_container: Node3D
 @export var spawn_points: Array[SpawnPoint]
 
 var player_instances : Dictionary = {}
 
 func _ready() -> void:
-	if !players_container:
-		push_error("players_container not set")
-		return
 	if !player_scene:
 		push_error("player_scene not set")
 		return
@@ -22,10 +18,15 @@ func _ready() -> void:
 		return
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
-	for player_id in NetworkManager.lobby.players.keys():
+	NetworkManager.on_players_ready.connect(spawn_players)
+
+func spawn_players() -> void:
+	for player_id: int in NetworkManager.lobby.players.keys():
 		spawn(player_id)
 
 func get_available_spawn_point() -> SpawnPoint:
+	if !is_multiplayer_authority():
+		return
 	var spawn_point: SpawnPoint = null
 	while !spawn_point:
 		var random_spawn_point: SpawnPoint = spawn_points.pick_random()
@@ -46,7 +47,8 @@ func spawn_player(player_peer_id: int) -> Player:
 func remove_player(player_peer_id: int) -> void:
 	if !player_instances.has(player_peer_id):
 		return
-	player_instances[player_peer_id].queue_free()
+	var player_instance: Player = player_instances[player_peer_id]
+	player_instance.queue_free()
 	player_instances.erase(player_peer_id)
 
 func _on_player_connected(player: NetworkPlayer) -> void:

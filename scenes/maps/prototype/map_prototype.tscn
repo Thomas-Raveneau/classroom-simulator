@@ -28,11 +28,10 @@ glow_enabled = true
 [node name="GameManager" type="Node" parent="."]
 script = ExtResource("1_q7rny")
 
-[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." node_paths=PackedStringArray("players_container", "spawn_points")]
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="." node_paths=PackedStringArray("spawn_points")]
 spawn_path = NodePath("../Players")
 script = ExtResource("2_blwkt")
 player_scene = ExtResource("2_q7rny")
-players_container = NodePath("../Players")
 spawn_points = [NodePath("SpawnPoint1"), NodePath("SpawnPoint2"), NodePath("SpawnPoint3"), NodePath("SpawnPoint4")]
 
 [node name="SpawnPoint1" parent="MultiplayerSpawner" instance=ExtResource("4_o3rh0")]

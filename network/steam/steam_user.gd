@@ -100,7 +100,7 @@ func refresh_friends(
 func get_friends_lobbies() -> Array[SteamFriendLobby]:
 	var unique_lobbies: Dictionary = {}
 	var friends_lobbies: Array[SteamFriendLobby] = [] 
-	for friend in friends:
+	for friend: SteamUser in friends:
 		if !friend.lobby || friend.lobby.id == 0:
 			continue
 		if unique_lobbies.get(friend.lobby.id): 
@@ -116,7 +116,7 @@ func _on_friend_lobby_update(success: int, lobby_id: int, _user_id: int) -> void
 	if !success:
 		return
 	var friend_lobby_name: String = Steam.getLobbyData(lobby_id, "name")
-	for friend in friends:
+	for friend: SteamUser in friends:
 		if !friend.lobby || friend.lobby.id != lobby_id:
 			continue
 		friend.lobby.name = friend_lobby_name

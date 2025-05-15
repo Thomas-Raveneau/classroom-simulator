@@ -1,8 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://dbgu66plcb5y"]
+[gd_scene load_steps=3 format=3 uid="uid://dbgu66plcb5y"]
 
 [ext_resource type="Script" uid="uid://hcs3hve3rjgj" path="res://scenes/gameplay/game/spawn/spawn_point.gd" id="1_7q05a"]
+
+[sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_7q05a"]
+properties/0/path = NodePath(".:is_spawnable")
+properties/0/spawn = true
+properties/0/replication_mode = 1
 
 [node name="SpawnPoint" type="Node3D"]
 script = ExtResource("1_7q05a")
 
 [node name="SpawnTimer" type="Timer" parent="."]
+
+[node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
+replication_config = SubResource("SceneReplicationConfig_7q05a")

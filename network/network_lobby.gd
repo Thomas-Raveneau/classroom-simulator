@@ -21,7 +21,7 @@ func set_player(player: NetworkPlayer) -> void:
 	players[player.peer_id] = player
 
 func has_steam_user(steam_id: int) -> bool:
-	for player_id in players.keys():
+	for player_id: int in players.keys():
 		var player: NetworkPlayer = players[player_id]
 		if player.steam.id == steam_id:
 			return true
@@ -33,14 +33,14 @@ func check_if_loaded() -> void:
 
 func _on_player_connected(peer_id: int) -> void:
 	var steam_id: int = NetworkManager.peer.get_steam64_from_peer_id(peer_id)
-	var steam_user := SteamUser.new(steam_id)
-	var player := NetworkPlayer.new(steam_user)
+	var steam_user: SteamUser = SteamUser.new(steam_id)
+	var player: NetworkPlayer = NetworkPlayer.new(steam_user)
 	player.is_host = steam_id == NetworkManager.steam.lobby.get_host_id()
 	players[player.peer_id] = player
 	player_connected.emit(player)
 	check_if_loaded()
 
-func _on_player_disconnected(peer_id: int):
+func _on_player_disconnected(peer_id: int) -> void:
 	var disconnected_player: NetworkPlayer = players[peer_id]
 	if disconnected_player.is_host:
 		NetworkManager.steam.lobby.leave()
@@ -48,16 +48,16 @@ func _on_player_disconnected(peer_id: int):
 	player_disconnected.emit(disconnected_player)
 	check_if_loaded()
 
-func _on_connected_ok():
-	var peer_id = NetworkManager.local_user.peer_id
+func _on_connected_ok() -> void:
+	var peer_id: int = NetworkManager.local_user.peer_id
 	players[peer_id].connected = true
 	player_connected.emit(players[peer_id])
 	check_if_loaded()
 
-func _on_connected_fail():
+func _on_connected_fail() -> void:
 	multiplayer.multiplayer_peer = null
 
-func _on_server_disconnected():
+func _on_server_disconnected() -> void:
 	print("SERVER DISCONNECTED")
 	multiplayer.multiplayer_peer = null
 	players.clear()

@@ -40,7 +40,7 @@ func reset() -> void:
 	is_loaded = false
 	is_load_confirmed = false
 
-func cancel_load():
+func cancel_load() -> void:
 	reset()
 	load_main_menu()
 
@@ -77,7 +77,7 @@ func add_timeout_timer(timeout_seconds: int) -> void:
 func is_scene_loaded() -> bool:
 	if is_loaded:
 		return true
-	var progress = []
+	var progress: Array[float] = []
 	var load_status : ResourceLoader.ThreadLoadStatus = \
 		ResourceLoader.load_threaded_get_status(scene_path, progress)
 	if load_status == ResourceLoader.THREAD_LOAD_FAILED \

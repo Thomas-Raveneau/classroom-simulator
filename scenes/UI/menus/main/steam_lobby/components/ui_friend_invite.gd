@@ -1,3 +1,4 @@
+class_name UiFriendInvite
 extends HBoxContainer
 
 @onready var name_label: Label = $NameLabel

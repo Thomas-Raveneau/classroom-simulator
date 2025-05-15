@@ -37,9 +37,9 @@ func _enter_tree() -> void:
 		start_button.show()
 
 func refresh_players() -> void:
-	for player_id in NetworkManager.lobby.players.keys():
+	for player_id: int in NetworkManager.lobby.players.keys():
 		var player: NetworkPlayer = NetworkManager.lobby.players[player_id]
-		var lobby_player_instance = lobby_player_component.instantiate()
+		var lobby_player_instance: UiLobbyPlayer = lobby_player_component.instantiate()
 		lobby_player_instance.player = player
 		players_container.add_child(lobby_player_instance)
 		player_instances[player_id] = lobby_player_instance
@@ -50,14 +50,14 @@ func refresh_friends() -> void:
 	for steam_friend: SteamUser in NetworkManager.local_user.steam.friends:
 		if NetworkManager.lobby.has_steam_user(steam_friend.id):
 			continue
-		var friend_invite_instance = friend_invite_component.instantiate()
+		var friend_invite_instance: UiFriendInvite = friend_invite_component.instantiate()
 		friend_invite_instance.friend = steam_friend
 		friends_container.add_child(friend_invite_instance)
 
 func _on_player_connected(player: NetworkPlayer) -> void:
 	if player_instances.has(player.peer_id):
 		return
-	var lobby_player_instance = lobby_player_component.instantiate()
+	var lobby_player_instance: UiLobbyPlayer = lobby_player_component.instantiate()
 	lobby_player_instance.player = player
 	players_container.add_child(lobby_player_instance)
 	player_instances[player.peer_id] = lobby_player_instance
@@ -66,7 +66,8 @@ func _on_player_connected(player: NetworkPlayer) -> void:
 func _on_player_disconnected(player: NetworkPlayer) -> void:
 	if !player_instances.has(player.peer_id):
 		return
-	player_instances[player.peer_id].queue_free()
+	var player_instance: UiLobbyPlayer = player_instances[player.peer_id]
+	player_instance.queue_free()
 	player_instances.erase(player.peer_id)
 	refresh_friends()
 

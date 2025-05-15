@@ -34,17 +34,13 @@ func reset_local_player() -> void:
 
 @rpc("authority", "call_local", "reliable")
 func load_scene(scene_file: String) -> void:
-	if is_multiplayer_authority():
-		SceneManager.load_scene(scene_file, on_players_ready)
-	else:
-		SceneManager.load_scene(scene_file)
+	SceneManager.load_scene(scene_file)
 	SceneManager.on_loaded.connect(_on_player_loaded_scene.rpc_id.bind(SERVER))
 
 @rpc("any_peer", "call_local", "reliable")
 func _on_player_loaded_scene() -> void:
 	if !is_multiplayer_authority():
 		return
-	var player_id: int = multiplayer.get_remote_sender_id()
 	players_ready += 1
 	if players_ready < lobby.players.size():
 		return

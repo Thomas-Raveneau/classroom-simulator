@@ -42,19 +42,20 @@ func send_message(
 ) -> void:
 	var data: PackedByteArray = var_to_bytes(message).compress(FileAccess.COMPRESSION_GZIP)
 	if target == null: # send to everyone
-		for member in  NetworkManager.steam.lobby.members:
-			if member.id ==  NetworkManager.steam.user.id:
+		for player: NetworkPlayer in  NetworkManager.lobby.players.values():
+			if player.steam.id ==  NetworkManager.local_user.steam.id:
 				continue
-			Steam.sendMessageToUser(member.id, data, type, CHANNEL)
+			Steam.sendMessageToUser(player.steam.id, data, type, CHANNEL)
 	else:
 		Steam.sendMessageToUser(target.id, data, type, CHANNEL)
 
 func read_messages() -> void:
-	var messages: Array = Steam.receiveMessagesOnChannel(CHANNEL, MAX_MESSAGES)
-	for message in messages:
+	var messages: Array[Dictionary] = Steam.receiveMessagesOnChannel(CHANNEL, MAX_MESSAGES)
+	for message: Dictionary in messages:
 		if !message || message.is_empty():
 			continue
-		var decompressed_payload: PackedByteArray = message.payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
+		var compressed_payload: PackedByteArray = message.payload
+		var decompressed_payload: PackedByteArray = compressed_payload.decompress_dynamic(-1, FileAccess.COMPRESSION_GZIP)
 		var _payload: Dictionary = bytes_to_var(decompressed_payload \
 			if decompressed_payload.size() > 0 \
 			else message.payload
@@ -69,7 +70,7 @@ func close_session(user: SteamUser) -> void:
 		return
 	Steam.closeSessionWithUser(user.id)
 
-func _on_session_request(user_id: int):
+func _on_session_request(user_id: int) -> void:
 	Steam.acceptSessionWithUser(user_id)
 
 func _on_session_failed(_user_id: int, _error: int, _state: int, debug_msg: String) -> void:

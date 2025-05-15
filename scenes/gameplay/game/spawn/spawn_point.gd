@@ -3,7 +3,7 @@ extends Node3D
 
 @onready var spawn_timer: Timer = $SpawnTimer
 
-var is_spawnable: bool = true
+@export var is_spawnable: bool = true
 var spawn_delay_seconds: int = 5
 
 func _ready() -> void:

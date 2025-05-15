@@ -12,9 +12,9 @@ func _ready() -> void:
 func refresh_invites() -> void:
 	if invites.size() == 0:
 		return
-	for child in get_children():
+	for child: UiSteamInvite in get_children():
 		child.queue_free()
-	for invite in invites:
+	for invite: UiSteamInvite in invites:
 		add_child(invite)
 
 func _on_invite_received(user: SteamUser, lobby_id: int) -> void:
