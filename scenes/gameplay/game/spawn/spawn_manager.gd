@@ -18,20 +18,18 @@ func _ready() -> void:
 		return
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
-	NetworkManager.on_players_ready.connect(spawn_players)
+	NetworkManager.players_ready.connect(spawn_players)
 
 func spawn_players() -> void:
 	for player_id: int in NetworkManager.lobby.players.keys():
 		spawn(player_id)
 
 func get_available_spawn_point() -> SpawnPoint:
-	if !is_multiplayer_authority():
-		return
 	var spawn_point: SpawnPoint = null
 	while !spawn_point:
 		var random_spawn_point: SpawnPoint = spawn_points.pick_random()
 		if !random_spawn_point.is_spawnable:
-			continue 
+			continue
 		spawn_point = random_spawn_point
 	return spawn_point
 

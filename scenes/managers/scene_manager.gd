@@ -1,13 +1,16 @@
 extends Node
 
-signal on_loaded
+signal loaded
+signal changed
 
 var loading_screen_scene: PackedScene = preload("res://scenes/UI/screens/screen_loading.tscn")
 
 var scene_path: String = ""
 var confirm_load: Signal
 var is_loaded: bool = false
+var is_changing: bool = false
 var is_load_confirmed: bool = false
+var previous_scene_id: int = 0
 var timeout_timer: Timer
 var loading_screen_instance: Node
 
@@ -20,6 +23,10 @@ func _process(_delta: float) -> void:
 	if !is_scene_loaded():
 		return
 	if !is_load_confirmed:
+		return
+	if is_changing && get_tree().current_scene:
+		changed.emit()
+		reset()
 		return
 	change_to_loaded_scene()
 
@@ -38,6 +45,7 @@ func reset() -> void:
 		confirm_load = Signal()
 	scene_path = ""
 	is_loaded = false
+	is_changing = false
 	is_load_confirmed = false
 
 func cancel_load() -> void:
@@ -86,7 +94,7 @@ func is_scene_loaded() -> bool:
 		return false
 	if load_status != ResourceLoader.ThreadLoadStatus.THREAD_LOAD_LOADED:
 		return false
-	on_loaded.emit()
+	loaded.emit()
 	is_loaded = true
 	return true
 
@@ -96,7 +104,7 @@ func change_to_loaded_scene() -> void:
 		return
 	var loaded_scene: PackedScene = ResourceLoader.load_threaded_get(scene_path)
 	get_tree().change_scene_to_packed(loaded_scene)
-	reset()
+	is_changing = true
 
 func _on_load_confirmed() -> void:
 	is_load_confirmed = true

@@ -1,6 +1,6 @@
 extends Node
 
-signal on_players_ready
+signal players_ready
 
 const SERVER: int = 1
 
@@ -9,7 +9,7 @@ var lobby: NetworkLobby
 var local_user: NetworkPlayer
 var peer: SteamMultiplayerPeer
 
-var players_ready: int = 0
+var players_ready_count: int = 0
 
 func _ready() -> void:
 	steam = SteamManager.new()
@@ -35,17 +35,17 @@ func reset_local_player() -> void:
 @rpc("authority", "call_local", "reliable")
 func load_scene(scene_file: String) -> void:
 	SceneManager.load_scene(scene_file)
-	SceneManager.on_loaded.connect(_on_player_loaded_scene.rpc_id.bind(SERVER))
+	SceneManager.changed.connect(_on_player_changed_scene.rpc_id.bind(SERVER))
 
 @rpc("any_peer", "call_local", "reliable")
-func _on_player_loaded_scene() -> void:
+func _on_player_changed_scene() -> void:
 	if !is_multiplayer_authority():
 		return
-	players_ready += 1
-	if players_ready < lobby.players.size():
+	players_ready_count += 1
+	if players_ready_count < lobby.players.size():
 		return
-	players_ready = 0
-	on_players_ready.emit()
+	players_ready_count = 0
+	players_ready.emit()
 
 func _on_lobby_joined() -> void:
 	multiplayer.multiplayer_peer = peer
