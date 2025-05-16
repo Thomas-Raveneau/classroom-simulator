@@ -35,6 +35,8 @@ func has_spawnable_point() -> bool:
 	)
 
 func get_spawnable_point() -> SpawnPoint:
+	if !has_spawnable_point():
+		return null
 	spawn_points.shuffle()
 	var index: int = spawn_points.find_custom(
 		func (spawn_point: SpawnPoint) -> bool:
@@ -49,6 +51,8 @@ func spawn_players() -> void:
 		spawn_player(player_id)
 
 func spawn_player(player_id: int) -> void:
+	if !NetworkManager.lobby.players.has(player_id):
+		return
 	if !has_spawnable_point():
 		return delay_player_spawn(player_id)
 	var spawn_point: SpawnPoint = get_spawnable_point()
@@ -78,6 +82,7 @@ func remove_player(player_id: int) -> void:
 	player_instances.erase(player_id)
 
 func _on_player_spawn(spawn_info: SpawnInfo) -> Player:
+	print("SPAWN: ", spawn_info.player_id)
 	var player_instance: Player = player_scene.instantiate()
 	player_instance.set_multiplayer_authority(spawn_info.player_id)
 	player_instance.position = spawn_info.position
@@ -87,7 +92,7 @@ func _on_player_spawn(spawn_info: SpawnInfo) -> Player:
 func _on_player_connected(player: NetworkPlayer) -> void:
 	if !multiplayer.is_server():
 		return
-	spawn(player.peer_id)
+	spawn_player(player.peer_id)
 
 func _on_player_disconnected(player: NetworkPlayer) -> void:
 	remove_player(player.peer_id)

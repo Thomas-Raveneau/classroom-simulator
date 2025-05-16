@@ -4,7 +4,7 @@ extends Node3D
 @onready var spawn_timer: Timer = $SpawnTimer
 
 @export var is_spawnable: bool = true
-var spawn_delay_seconds: int = 2
+var spawn_delay_seconds: int = 10
 
 func _ready() -> void:
 	spawn_timer.one_shot = true
