@@ -22,7 +22,7 @@ func _ready() -> void:
 		push_error("set at least one spawn point")
 		return
 	spawn_function = _on_player_spawn
-	if !multiplayer.is_server():
+	if !is_multiplayer_authority():
 		return
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
@@ -45,12 +45,14 @@ func get_spawnable_point() -> SpawnPoint:
 	return spawn_points[index]
 
 func spawn_players() -> void:
-	if !multiplayer.is_server():
+	if !is_multiplayer_authority():
 		return
 	for player_id: int in NetworkManager.lobby.players.keys():
 		spawn_player(player_id)
 
 func spawn_player(player_id: int) -> void:
+	if !is_multiplayer_authority():
+		return
 	if !NetworkManager.lobby.players.has(player_id):
 		return
 	if !has_spawnable_point():
@@ -61,6 +63,8 @@ func spawn_player(player_id: int) -> void:
 	spawn(spawn_info)
 
 func delay_player_spawn(player_id: int, timer: Timer = null) -> void:
+	if !is_multiplayer_authority():
+		return
 	if has_spawnable_point():
 		if timer:
 			timer.queue_free()
@@ -90,7 +94,7 @@ func _on_player_spawn(spawn_info: SpawnInfo) -> Player:
 	return player_instance
 
 func _on_player_connected(player: NetworkPlayer) -> void:
-	if !multiplayer.is_server():
+	if !is_multiplayer_authority():
 		return
 	spawn_player(player.peer_id)
 
