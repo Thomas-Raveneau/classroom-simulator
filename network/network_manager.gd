@@ -35,7 +35,10 @@ func reset_local_player() -> void:
 @rpc("authority", "call_local", "reliable")
 func load_scene(scene_file: String) -> void:
 	SceneManager.load_scene(scene_file)
-	SceneManager.changed.connect(_on_player_changed_scene.rpc_id.bind(SERVER))
+	SceneManager.changed.connect(
+		_on_player_changed_scene.rpc_id.bind(SERVER),
+		CONNECT_ONE_SHOT
+	)
 
 @rpc("any_peer", "call_local", "reliable")
 func _on_player_changed_scene() -> void:

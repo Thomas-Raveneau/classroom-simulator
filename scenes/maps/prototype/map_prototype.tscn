@@ -32,7 +32,7 @@ script = ExtResource("1_q7rny")
 spawn_path = NodePath("../Players")
 script = ExtResource("2_blwkt")
 player_scene = ExtResource("2_q7rny")
-spawn_points = [NodePath("SpawnPoint1"), NodePath("SpawnPoint2")]
+spawn_points = [NodePath("SpawnPoint1")]
 
 [node name="SpawnPoint1" parent="MultiplayerSpawner" instance=ExtResource("4_o3rh0")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5, 0, 0)

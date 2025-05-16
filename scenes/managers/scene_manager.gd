@@ -63,7 +63,7 @@ func load_scene(
 	scene_path = _scene_path
 	if _confirm_load:
 		confirm_load = _confirm_load
-		confirm_load.connect(_on_load_confirmed)
+		confirm_load.connect(_on_load_confirmed, CONNECT_ONE_SHOT)
 	else:
 		is_load_confirmed = true
 	if timeout_seconds > 0:
