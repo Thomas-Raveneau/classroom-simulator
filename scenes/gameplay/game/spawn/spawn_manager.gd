@@ -1,14 +1,6 @@
 class_name SpawnManager
 extends MultiplayerSpawner
 
-class SpawnInfo:
-	var player_id: int
-	var position: Vector3
-	
-	func _init(_player_id: int, _position: Vector3) -> void:
-		player_id = _player_id
-		position = _position
-
 @export var player_scene: PackedScene
 @export var spawn_points: Array[SpawnPoint]
 
@@ -22,7 +14,7 @@ func _ready() -> void:
 		push_error("set at least one spawn point")
 		return
 	spawn_function = _on_player_spawn
-	if !is_multiplayer_authority():
+	if !multiplayer.is_server():
 		return
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
@@ -45,26 +37,21 @@ func get_spawnable_point() -> SpawnPoint:
 	return spawn_points[index]
 
 func spawn_players() -> void:
-	if !is_multiplayer_authority():
+	if !multiplayer.is_server():
 		return
 	for player_id: int in NetworkManager.lobby.players.keys():
 		spawn_player(player_id)
 
 func spawn_player(player_id: int) -> void:
-	if !is_multiplayer_authority():
-		return
 	if !NetworkManager.lobby.players.has(player_id):
 		return
 	if !has_spawnable_point():
 		return delay_player_spawn(player_id)
 	var spawn_point: SpawnPoint = get_spawnable_point()
-	var spawn_info: SpawnInfo = SpawnInfo.new(player_id, spawn_point.position)
 	spawn_point.use()
-	spawn(spawn_info)
+	spawn({ player_id = player_id, position = spawn_point.position })
 
 func delay_player_spawn(player_id: int, timer: Timer = null) -> void:
-	if !is_multiplayer_authority():
-		return
 	if has_spawnable_point():
 		if timer:
 			timer.queue_free()
@@ -85,8 +72,7 @@ func remove_player(player_id: int) -> void:
 	player_instance.queue_free()
 	player_instances.erase(player_id)
 
-func _on_player_spawn(spawn_info: SpawnInfo) -> Player:
-	print("SPAWN: ", spawn_info.player_id)
+func _on_player_spawn(spawn_info: Dictionary) -> Player:
 	var player_instance: Player = player_scene.instantiate()
 	player_instance.set_multiplayer_authority(spawn_info.player_id)
 	player_instance.position = spawn_info.position
@@ -94,7 +80,7 @@ func _on_player_spawn(spawn_info: SpawnInfo) -> Player:
 	return player_instance
 
 func _on_player_connected(player: NetworkPlayer) -> void:
-	if !is_multiplayer_authority():
+	if !multiplayer.is_server():
 		return
 	spawn_player(player.peer_id)
 
