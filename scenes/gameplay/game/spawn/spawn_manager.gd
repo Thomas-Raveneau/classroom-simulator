@@ -18,7 +18,7 @@ func _ready() -> void:
 		return
 	NetworkManager.lobby.player_connected.connect(_on_player_connected)
 	NetworkManager.lobby.player_disconnected.connect(_on_player_disconnected)
-	NetworkManager.players_ready.connect(spawn_players)
+	NetworkManager.loader.players_ready.connect(spawn_players)
 
 func has_spawnable_point() -> bool:
 	return spawn_points.any(
