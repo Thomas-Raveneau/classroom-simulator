@@ -4,6 +4,7 @@ signal loaded
 signal changed
 
 var loading_screen_scene: PackedScene = preload("res://scenes/UI/screens/screen_loading.tscn")
+const MINIMAL_LOAD_TIME: float = 0.33
 
 var scene_path: String = ""
 var confirm_load: Signal
@@ -12,10 +13,16 @@ var is_changing: bool = false
 var is_load_confirmed: bool = false
 var previous_scene_id: int = 0
 var timeout_timer: Timer
+var minimal_load_timer: Timer
 var loading_screen_instance: Node
 
 func _ready() -> void:
+	minimal_load_timer = Timer.new()
+	minimal_load_timer.autostart = false
+	minimal_load_timer.one_shot = true
+	minimal_load_timer.wait_time = MINIMAL_LOAD_TIME
 	NetworkManager.steam.lobby.on_left.connect(load_main_menu)
+	add_child(minimal_load_timer)
 
 func _process(_delta: float) -> void:
 	if scene_path.is_empty():
@@ -27,6 +34,8 @@ func _process(_delta: float) -> void:
 	if is_changing && get_tree().current_scene:
 		changed.emit()
 		reset()
+		return
+	if minimal_load_timer.time_left > 0:
 		return
 	change_to_loaded_scene()
 
@@ -72,6 +81,7 @@ func load_scene(
 	loading_screen_instance = loading_screen_scene.instantiate()
 	if get_tree().current_scene:
 		get_tree().current_scene.queue_free()
+	minimal_load_timer.start()
 	add_child(loading_screen_instance)
 
 func add_timeout_timer(timeout_seconds: int) -> void:
