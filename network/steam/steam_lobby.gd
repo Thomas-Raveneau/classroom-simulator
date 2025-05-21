@@ -27,6 +27,10 @@ func create() -> void:
 	NetworkManager.peer.lobby_data_update.connect(_on_lobby_update)
 
 func join(lobby_id: int) -> void:
+	if id != 0 && id != lobby_id:
+		leave()
+		on_left.connect(join.bind(lobby_id), CONNECT_ONE_SHOT)
+		return
 	NetworkManager.peer.connect_lobby(lobby_id)
 
 func auto_join() -> void:

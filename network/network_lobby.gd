@@ -58,7 +58,6 @@ func _on_connected_fail() -> void:
 	multiplayer.multiplayer_peer = null
 
 func _on_server_disconnected() -> void:
-	print("SERVER DISCONNECTED")
 	multiplayer.multiplayer_peer = null
 	players.clear()
 	server_disconnected.emit()
