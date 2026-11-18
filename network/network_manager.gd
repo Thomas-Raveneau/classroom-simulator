@@ -10,6 +10,11 @@ var peer: SteamMultiplayerPeer
 
 func _ready() -> void:
 	steam = SteamManager.new()
+	if !steam.initialized:
+		# Calling Steam or SteamMultiplayerPeer without an initialized Steam API crashes the engine
+		printerr("Steam failed to initialize (is the Steam client running?), quitting")
+		get_tree().quit()
+		return
 	lobby = NetworkLobby.new()
 	loader = NetworkLoader.new()
 	peer = SteamMultiplayerPeer.new()

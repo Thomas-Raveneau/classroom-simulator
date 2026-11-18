@@ -32,7 +32,7 @@ func check_if_loaded() -> void:
 		on_loaded.emit()
 
 func _on_player_connected(peer_id: int) -> void:
-	var steam_id: int = NetworkManager.peer.get_steam64_from_peer_id(peer_id)
+	var steam_id: int = NetworkManager.peer.get_steam_id_for_peer_id(peer_id)
 	var steam_user: SteamUser = SteamUser.new(steam_id)
 	var player: NetworkPlayer = NetworkPlayer.new(steam_user)
 	player.is_host = steam_id == NetworkManager.steam.lobby.get_host_id()

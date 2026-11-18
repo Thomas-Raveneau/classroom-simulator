@@ -13,25 +13,22 @@ var users_count: int = 0
 func _ready() -> void:
 	Steam.lobby_invite.connect(_on_invite_received)
 	Steam.lobby_joined.connect(_on_joined)
+	Steam.lobby_created.connect(_on_created)
+	Steam.lobby_data_update.connect(_on_lobby_update)
 	auto_join()
 
 func create() -> void:
 	if id != 0:
 		return
 	NetworkManager.local_user.is_host = true
-	NetworkManager.peer.create_lobby(
-		SteamMultiplayerPeer.LOBBY_TYPE_FRIENDS_ONLY, 
-		GameSettings.MAX_PLAYERS
-	)
-	NetworkManager.peer.lobby_created.connect(_on_created)
-	NetworkManager.peer.lobby_data_update.connect(_on_lobby_update)
+	Steam.createLobby(Steam.LOBBY_TYPE_FRIENDS_ONLY, GameSettings.MAX_PLAYERS)
 
 func join(lobby_id: int) -> void:
 	if id != 0 && id != lobby_id:
 		leave()
 		on_left.connect(join.bind(lobby_id), CONNECT_ONE_SHOT)
 		return
-	NetworkManager.peer.connect_lobby(lobby_id)
+	Steam.joinLobby(lobby_id)
 
 func auto_join() -> void:
 	var args: Array = OS.get_cmdline_args()
@@ -68,6 +65,13 @@ func get_host_id() -> int:
 
 func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	if result != Steam.RESULT_OK:
+		NetworkManager.local_user.is_host = false
+		return
+	var error: Error = NetworkManager.peer.host_with_lobby(lobby_id)
+	if error != OK:
+		printerr("Failed to host with lobby %d: %s" % [lobby_id, error_string(error)])
+		NetworkManager.local_user.is_host = false
+		Steam.leaveLobby(lobby_id)
 		return
 	id = lobby_id
 	lobby_name = "%s's lobby" % NetworkManager.local_user.steam.name
@@ -76,7 +80,15 @@ func _on_created(result: Steam.Result, lobby_id: int) -> void:
 	on_created.emit()
 
 func _on_joined(lobby_id: int, _permissions: int, _locked: bool, response: Steam.ChatRoomEnterResponse) -> void:
+	# Steam also fires lobby_joined for the lobby creator: the host is set up in _on_created
+	if NetworkManager.local_user.is_host:
+		return
 	if response != Steam.CHAT_ROOM_ENTER_RESPONSE_SUCCESS || id != 0:
+		return
+	var error: Error = NetworkManager.peer.connect_to_lobby(lobby_id)
+	if error != OK:
+		printerr("Failed to connect to lobby %d: %s" % [lobby_id, error_string(error)])
+		Steam.leaveLobby(lobby_id)
 		return
 	id = lobby_id
 	users_count = Steam.getNumLobbyMembers(id)
@@ -86,8 +98,8 @@ func _on_invite_received(user_id: int, lobby_id: int, _game_id: int) -> void:
 	var user: SteamUser = SteamUser.new(user_id)
 	on_invite_received.emit(user, lobby_id)
 
-func _on_lobby_update(success: int, _lobby_id: int, _user_id: int) -> void:
-	if !success || id == 0:
+func _on_lobby_update(success: int, lobby_id: int, _user_id: int) -> void:
+	if !success || id == 0 || lobby_id != id:
 		return
 	lobby_name = Steam.getLobbyData(id, "name")
 	users_count = Steam.getNumLobbyMembers(id)

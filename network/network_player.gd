@@ -14,7 +14,7 @@ func _init(_steam: SteamUser = null, _connected: bool = true) -> void:
 func set_steam(_steam: SteamUser) -> void:
 	steam = _steam
 	name = steam.name
-	peer_id = NetworkManager.peer.get_peer_id_from_steam64(steam.id)
+	peer_id = NetworkManager.peer.get_peer_id_for_steam_id(steam.id)
 
 func _to_string() -> String:
 	return str({ 
