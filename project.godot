@@ -75,7 +75,3 @@ jump={
 [steam_lobby]
 
 config_path="res://lobby_config.tres"
-
-[steam]
-
-initialization/app_data/app_id=480
