@@ -17,6 +17,11 @@ const BACKEND_SCRIPTS: Dictionary[String, String] = {
 	"enet": "res://addons/steam_lobby/backends/enet/enet_lobby_backend.gd",
 }
 
+## Engine class a backend cannot work without (provided by an extension).
+const BACKEND_REQUIRED_CLASSES: Dictionary[String, StringName] = {
+	"steam": &"SteamMultiplayerPeer",
+}
+
 ## Null when `LobbyConfig.auto_navigation` is off.
 var navigator: LobbyNavigator
 
@@ -44,6 +49,13 @@ func _create_backend(for_config: LobbyConfig) -> LobbyBackend:
 	for argument: String in OS.get_cmdline_args() + OS.get_cmdline_user_args():
 		if argument.begins_with(BACKEND_ARGUMENT):
 			backend_name = argument.trim_prefix(BACKEND_ARGUMENT)
+	var required_class: StringName = BACKEND_REQUIRED_CLASSES.get(backend_name, &"")
+	if not required_class.is_empty() and not ClassDB.class_exists(required_class):
+		push_error(
+			"Lobby: backend \"%s\" needs the GodotSteam extension (addons/godotsteam), which is not installed. Online features are unavailable."
+			% backend_name
+		)
+		return LobbyBackend.new()
 	var script_path: String = BACKEND_SCRIPTS.get(backend_name, "")
 	if not script_path.is_empty() and ResourceLoader.exists(script_path):
 		var script: GDScript = load(script_path) as GDScript
