@@ -3,7 +3,7 @@ extends Node
 signal loaded
 signal changed
 
-var loading_screen_scene: PackedScene = preload("res://scenes/UI/screens/screen_loading.tscn")
+var loading_screen_scene: PackedScene = preload("res://addons/steam_lobby/scenes/screen_loading.tscn")
 const MINIMAL_LOAD_TIME: float = 0.33
 
 var scene_path: String = ""
