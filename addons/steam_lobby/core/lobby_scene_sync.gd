@@ -7,7 +7,13 @@ extends Node
 ## The list of ready peers is then kept up to date on everyone, which also handles
 ## players joining in progress.
 ##
+## Before a game scene is left, every player first stops replicating it: an update still
+## travelling to a player who already left the scene would be an error on its side.
+##
 ## This node receives RPCs: it must have the same name and path on every peer.
+
+## Maximum time the host waits for the players to stop replicating, in seconds.
+const PAUSE_TIMEOUT: float = 1.0
 
 ## The local player starts loading `path`.
 signal load_started(path: String, target_state: LobbyTypes.State)
@@ -41,6 +47,12 @@ var _loaded_peers: Array[int] = []
 ## Host: peers the barrier waits for.
 var _expected_peers: Array[int] = []
 var _is_barrier_open: bool = false
+## The game scene is about to be left: nothing is replicated anymore.
+var _is_paused: bool = false
+## Host: order waiting for every player to pause.
+var _pending_path: String = ""
+var _pending_target_state: LobbyTypes.State = LobbyTypes.State.NONE
+var _pause_pending_peers: Array[int] = []
 
 func setup(config: LobbyConfig, members: LobbyMemberSync, loader: LobbySceneLoader) -> void:
 	_config = config
@@ -51,8 +63,9 @@ func setup(config: LobbyConfig, members: LobbyMemberSync, loader: LobbySceneLoad
 	_loader.changed.connect(_on_scene_changed)
 	_loader.failed.connect(_on_scene_failed)
 
+## True when what belongs to the game scene can be replicated to this peer.
 func is_peer_ready(peer_id: int) -> bool:
-	return ready_peers.has(peer_id)
+	return not _is_paused and ready_peers.has(peer_id)
 
 ## True from the moment the host ordered the game scene until it orders the lobby back.
 func is_game_active() -> bool:
@@ -63,7 +76,26 @@ func order_load(path: String, target_state: LobbyTypes.State) -> void:
 	if not _members.is_host():
 		return
 	_load_id += 1
-	var load_id: int = _load_id
+	_pending_path = path
+	_pending_target_state = target_state
+	_pause_pending_peers.clear()
+	if is_game_active():
+		for peer_id: int in _members.members:
+			if peer_id != multiplayer.get_unique_id():
+				_pause_pending_peers.append(peer_id)
+				_pause.rpc_id(peer_id, _load_id)
+	if _pause_pending_peers.is_empty():
+		_start_pending_load(_load_id)
+	else:
+		get_tree().create_timer(PAUSE_TIMEOUT).timeout.connect(_start_pending_load.bind(_load_id))
+
+func _start_pending_load(load_id: int) -> void:
+	if load_id != _load_id or _pending_path.is_empty() or not _members.is_host():
+		return
+	var path: String = _pending_path
+	var target_state: LobbyTypes.State = _pending_target_state
+	_pending_path = ""
+	_pause_pending_peers.clear()
 	_loaded_peers.clear()
 	_is_barrier_open = false
 	_expected_peers.assign(_members.members.keys())
@@ -86,6 +118,9 @@ func reset() -> void:
 	_is_loading_locally = false
 	_is_completed = false
 	_is_barrier_open = false
+	_is_paused = false
+	_pending_path = ""
+	_pause_pending_peers.clear()
 	_loaded_peers.clear()
 	_expected_peers.clear()
 	_announced_peers.clear()
@@ -94,6 +129,20 @@ func reset() -> void:
 		ready_peers_changed.emit()
 
 # --- Loading -----------------------------------------------------------------------------
+
+@rpc("authority", "call_remote", "reliable")
+func _pause(load_id: int) -> void:
+	_is_paused = true
+	ready_peers_changed.emit()
+	_pause_done.rpc_id(MultiplayerPeer.TARGET_PEER_SERVER, load_id)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _pause_done(load_id: int) -> void:
+	if not _members.is_host() or load_id != _load_id:
+		return
+	_pause_pending_peers.erase(multiplayer.get_remote_sender_id())
+	if _pause_pending_peers.is_empty():
+		_start_pending_load(load_id)
 
 @rpc("authority", "call_remote", "reliable")
 func _load(path: String, load_id: int, target_state: LobbyTypes.State) -> void:
@@ -105,6 +154,7 @@ func _begin_load(path: String, load_id: int, target_state: LobbyTypes.State) -> 
 	_target_state = target_state
 	_is_loading_locally = true
 	_is_completed = false
+	_is_paused = false
 	_announced_peers.clear()
 	_set_ready_peers([])
 	load_started.emit(path, target_state)
@@ -172,6 +222,9 @@ func _on_member_added(member: LobbyMember) -> void:
 	# for it: it is announced as ready once loaded.
 	if not _members.is_host() or member.is_host or not is_game_active():
 		return
+	if not _pending_path.is_empty():
+		# The game scene is being left: the newcomer follows with everyone else.
+		return
 	var load_id: int = _load_id
 	_load.rpc_id(member.peer_id, scene_path, load_id, _target_state)
 	get_tree().create_timer(_config.load_timeout).timeout.connect(
@@ -185,6 +238,11 @@ func _on_member_removed(member: LobbyMember) -> void:
 	if _members.is_host():
 		_loaded_peers.erase(member.peer_id)
 		_expected_peers.erase(member.peer_id)
+		_pause_pending_peers.erase(member.peer_id)
+		if not _pending_path.is_empty():
+			if _pause_pending_peers.is_empty():
+				_start_pending_load(_load_id)
+			return
 		_evaluate()
 	elif ready_peers.has(member.peer_id):
 		var remaining_peers: Array[int] = ready_peers.duplicate()

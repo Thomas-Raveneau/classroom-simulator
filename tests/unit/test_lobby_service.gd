@@ -9,22 +9,32 @@ var _config: LobbyConfig
 var _backend: FakeLobbyBackend
 var _loader: FakeSceneLoader
 var _service: LobbyService
+## The service lives in its own branch with its own multiplayer API, apart from the
+## `Lobby` autoload of the project.
+var _branch: Node
 
 func before_each() -> void:
 	_config = LobbyConfig.new()
 	_config.join_timeout = 0.3
 	_config.game_scene = GAME_SCENE
 	_config.lobby_scene = LOBBY_SCENE
+	_branch = Node.new()
+	add_child(_branch)
+	get_tree().set_multiplayer(SceneMultiplayer.new(), _branch.get_path())
 	_backend = FakeLobbyBackend.new()
 	_loader = FakeSceneLoader.new()
-	add_child_autofree(_loader)
+	_branch.add_child(_loader)
 	_service = LobbyService.new()
 	_service.setup(_config, _backend, _loader)
-	add_child_autofree(_service)
+	_branch.add_child(_service)
 	watch_signals(_service)
 
 func after_each() -> void:
 	_service.leave()
+	for child: Node in _branch.get_children():
+		child.free()
+	get_tree().set_multiplayer(null, _branch.get_path())
+	_branch.queue_free()
 
 func _create_lobby() -> void:
 	_service.create()
@@ -239,5 +249,6 @@ func test_invite_requires_a_lobby() -> void:
 	_service.invite(9)
 	assert_eq(_backend.invited_user_ids, [9] as Array[int])
 
-func test_for_node_finds_the_service() -> void:
+func test_for_node_finds_the_service_of_a_node() -> void:
 	assert_eq(LobbyService.for_node(_loader), _service)
+	assert_ne(LobbyService.for_node(self), _service, "another multiplayer API, another service")

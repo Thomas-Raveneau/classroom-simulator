@@ -149,8 +149,8 @@ func test_kicked_player_is_told_and_cannot_come_back() -> void:
 	var client: LobbyTestPeer = await _add_client()
 	var other: LobbyTestPeer = await _add_client()
 	host.service.kick(host.service.get_member(client.service.local_member.peer_id))
-	assert_eq(host.service.members.size(), 2, "removed at once on the host")
 	await _until(_state_is(client, LobbyTypes.State.NONE), "kicked client is out")
+	await _until(func() -> bool: return host.service.members.size() == 2, "host forgot the kicked client")
 	assert_signal_emitted_with_parameters(client.service, "left", [LobbyTypes.Reason.KICKED])
 	await _until(func() -> bool: return other.service.members.size() == 2, "other client sees the kick")
 	client.service.join(0)
@@ -350,3 +350,13 @@ func test_return_to_lobby_brings_everyone_back() -> void:
 	assert_eq(late.loader.requested_paths.size(), 0, "no game scene is pushed to a lobby newcomer")
 	var again: Array[LobbyTestPeer] = [client, late]
 	await _start_game(host, again)
+
+func test_kicked_player_ignoring_the_notice_is_disconnected() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	# A modified client could ignore the request to leave.
+	client.service._member_sync.dismissed.disconnect(client.service._on_dismissed)
+	host.service.kick(host.service.get_member(client.service.local_member.peer_id))
+	client.service.set_member_data("team", 1)
+	await _until(_state_is(client, LobbyTypes.State.NONE), "stubborn client is disconnected")
+	assert_eq(host.service.members.size(), 1)

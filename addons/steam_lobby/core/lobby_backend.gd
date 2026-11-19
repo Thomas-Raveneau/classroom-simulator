@@ -36,8 +36,9 @@ func setup(_config: LobbyConfig) -> void:
 	config = _config
 
 ## False when the backend cannot work (e.g. Steam is not running).
+## The base class is the "no backend" backend: it is never available.
 func is_available() -> bool:
-	return true
+	return false
 
 ## Human readable name, for logs and debug displays.
 func get_backend_name() -> String:

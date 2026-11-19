@@ -24,6 +24,9 @@ func setup(_config: LobbyConfig) -> void:
 	var user_id: int = randi_range(1, 1 << 30)
 	_identity = { "user_id": user_id, "name": _read_name_argument("Player %d" % (user_id % 10000)) }
 
+func is_available() -> bool:
+	return true
+
 func get_backend_name() -> String:
 	return "enet"
 

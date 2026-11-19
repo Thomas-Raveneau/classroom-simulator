@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://example/hud/game_hud.gd" id="1_hud"]
+
+[node name="GameHud" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 216.0
+offset_bottom = 47.0
+theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Back to lobby"
+
+[node name="LeaveButton" type="Button" parent="Buttons"]
+layout_mode = 2
+focus_mode = 0
+text = "Leave"
+
+[connection signal="pressed" from="Buttons/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="Buttons/LeaveButton" to="." method="_on_leave_button_pressed"]

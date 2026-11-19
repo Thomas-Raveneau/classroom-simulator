@@ -63,6 +63,13 @@ var local_member: LobbyMember:
 	get: return _member_sync.local_member
 var lobby_name: String:
 	get: return str(get_lobby_data(LOBBY_NAME_KEY, ""))
+## What the backend can do, for the UI to hide the rest.
+var supports_friends: bool:
+	get: return backend.supports_friends
+var supports_invites: bool:
+	get: return backend.supports_invites
+var supports_invite_overlay: bool:
+	get: return backend.supports_invite_overlay
 ## Host: optional validation of member data,
 ## `func(member: LobbyMember, key: String, value: Variant) -> bool`.
 var member_data_validator: Callable:
@@ -209,6 +216,14 @@ func start_game(scene_path: String = "") -> bool:
 	_scene_sync.order_load(
 		scene_path if not scene_path.is_empty() else config.game_scene, LobbyTypes.State.IN_GAME
 	)
+	return true
+
+## Host only, during the game. Loads another game scene on every member (next level...).
+## Returns false when it cannot be done.
+func change_game_scene(scene_path: String) -> bool:
+	if not is_host() or state != LobbyTypes.State.IN_GAME or scene_path.is_empty():
+		return false
+	_scene_sync.order_load(scene_path, LobbyTypes.State.IN_GAME)
 	return true
 
 ## Host only. Brings every member back to the lobby scene.

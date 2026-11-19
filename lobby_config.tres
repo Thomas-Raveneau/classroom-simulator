@@ -1,0 +1,8 @@
+[gd_resource type="Resource" script_class="LobbyConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/steam_lobby/core/lobby_config.gd" id="1_config"]
+
+[resource]
+script = ExtResource("1_config")
+game_key = "classroom_simulator"
+game_scene = "res://example/maps/prototype/map_prototype.tscn"

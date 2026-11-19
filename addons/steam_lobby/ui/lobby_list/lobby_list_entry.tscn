@@ -1,0 +1,26 @@
+[gd_scene load_steps=2 format=3 uid="uid://cxg22yg3ffh6e"]
+
+[ext_resource type="Script" path="res://addons/steam_lobby/ui/lobby_list/lobby_list_entry.gd" id="1_entry"]
+
+[node name="LobbyListEntry" type="HBoxContainer"]
+theme_override_constants/separation = 12
+script = ExtResource("1_entry")
+
+[node name="NameLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Lobby"
+text_overrun_behavior = 3
+
+[node name="CountLabel" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "1/10"
+
+[node name="JoinButton" type="Button" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Join"
+
+[connection signal="pressed" from="JoinButton" to="." method="_on_join_button_pressed"]

@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3 uid="uid://cql6ddnt0hedt"]
+
+[ext_resource type="Script" path="res://addons/steam_lobby/ui/invites/invite_list.gd" id="1_list"]
+
+[node name="InviteList" type="VBoxContainer"]
+script = ExtResource("1_list")

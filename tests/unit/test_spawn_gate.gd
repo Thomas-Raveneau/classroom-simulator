@@ -3,6 +3,7 @@ extends GutTest
 ## same process, to validate that LobbySpawnGate makes joining in progress safe.
 
 const GAME_SCENE: String = "res://game.tscn"
+const LOBBY_SCENE: String = "res://lobby.tscn"
 const WAIT: float = 3.0
 
 var _config: LobbyConfig
@@ -14,6 +15,8 @@ func before_each() -> void:
 	_config.join_timeout = 2.0
 	_config.load_timeout = 5.0
 	_config.game_scene = GAME_SCENE
+	_config.lobby_scene = LOBBY_SCENE
+	_config.dismiss_grace = 0.3
 	_config.allow_join_in_progress = true
 	_port = LobbyTestPeer.pick_port()
 	_peers = []
@@ -25,7 +28,8 @@ func after_each() -> void:
 
 func _add_peer() -> LobbyTestPeer:
 	var test_peer: LobbyTestPeer = LobbyTestPeer.create(self, _config, _port)
-	test_peer.loader.scene_factory = func(_path: String) -> Node: return TestGameScene.new()
+	test_peer.loader.scene_factory = func(path: String) -> Node:
+		return TestGameScene.new() if path == GAME_SCENE else Node.new()
 	_peers.append(test_peer)
 	return test_peer
 
@@ -121,4 +125,71 @@ func test_pawn_of_a_leaving_player_is_removed_everywhere() -> void:
 	client.service.leave()
 	await _until(func() -> bool: return _pawn_count(host) == 2, "host removed the pawn")
 	await _until(func() -> bool: return _pawn_count(other) == 2, "other client removed the pawn")
+	assert_engine_error_count(0)
+
+## Players keep synchronizing their pawns every frame: leaving the game scene must not
+## let an update reach a player who does not have the scene anymore.
+func _keep_pawns_moving(test_peers: Array[LobbyTestPeer], frames: int) -> void:
+	for frame: int in frames:
+		for test_peer: LobbyTestPeer in test_peers:
+			var scene: TestGameScene = _scene(test_peer)
+			if scene != null and test_peer.service.local_member != null:
+				var pawn: TestPawn = scene.get_pawn(test_peer.service.local_member.peer_id)
+				if pawn != null:
+					pawn.value += 1
+		await wait_process_frames(1)
+
+func test_return_to_lobby_stops_replication_cleanly() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	var other: LobbyTestPeer = await _add_client()
+	var everyone: Array[LobbyTestPeer] = [host, client, other]
+	host.service.start_game()
+	await _until(func() -> bool: return _pawn_count(other) == 3, "everyone is spawned")
+	await _keep_pawns_moving(everyone, 10)
+	host.service.return_to_lobby()
+	await _keep_pawns_moving(everyone, 30)
+	for test_peer: LobbyTestPeer in everyone:
+		await _until(
+			func() -> bool: return test_peer.service.state == LobbyTypes.State.IN_LOBBY,
+			"player is back in the lobby"
+		)
+		assert_null(_scene(test_peer), "the game scene is gone")
+	assert_engine_error_count(0)
+
+func test_game_scene_can_be_changed_during_the_game() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	var everyone: Array[LobbyTestPeer] = [host, client]
+	host.service.start_game()
+	await _until(func() -> bool: return _pawn_count(client) == 2, "everyone is spawned")
+	var first_scene_id: int = _scene(client).get_instance_id()
+	await _keep_pawns_moving(everyone, 10)
+	assert_true(host.service.change_game_scene(GAME_SCENE), "the host can change the scene")
+	assert_false(client.service.change_game_scene(GAME_SCENE), "a client cannot")
+	await _keep_pawns_moving(everyone, 30)
+	await _until(
+		func() -> bool:
+			return (
+				_scene(client) != null and _scene(client).get_instance_id() != first_scene_id
+				and _pawn_count(client) == 2
+			),
+		"everyone is spawned in the new scene"
+	)
+	assert_eq(client.service.state, LobbyTypes.State.IN_GAME)
+	assert_engine_error_count(0)
+
+func test_kick_during_the_game_stops_replication_cleanly() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	var other: LobbyTestPeer = await _add_client()
+	var everyone: Array[LobbyTestPeer] = [host, client, other]
+	host.service.start_game()
+	await _until(func() -> bool: return _pawn_count(other) == 3, "everyone is spawned")
+	await _keep_pawns_moving(everyone, 10)
+	host.service.kick(host.service.get_member(client.service.local_member.peer_id))
+	await _keep_pawns_moving(everyone, 30)
+	await _until(func() -> bool: return _pawn_count(host) == 2, "host removed the pawn")
+	await _until(func() -> bool: return _pawn_count(other) == 2, "other client removed the pawn")
+	assert_eq(client.service.last_reason, LobbyTypes.Reason.KICKED)
 	assert_engine_error_count(0)

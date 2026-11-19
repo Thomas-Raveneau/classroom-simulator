@@ -18,6 +18,10 @@ var current_scene: Node
 func load_scene(path: String, _confirm: Signal = Signal(), _timeout: float = 0.0) -> void:
 	requested_paths.append(path)
 	pending_path = path
+	# Like the real loader, the current scene is left as soon as a load starts.
+	if current_scene != null:
+		current_scene.free()
+		current_scene = null
 	if not manual:
 		complete.call_deferred()
 
@@ -30,8 +34,6 @@ func complete() -> void:
 	current_path = pending_path
 	pending_path = ""
 	if scene_factory.is_valid():
-		if current_scene != null:
-			current_scene.free()
 		current_scene = scene_factory.call(current_path)
 		current_scene.name = "Scene"
 		get_parent().add_child(current_scene)

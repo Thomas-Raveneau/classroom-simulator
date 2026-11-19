@@ -37,6 +37,8 @@ var _backend: LobbyBackend
 var _banned_user_ids: Array[int] = []
 ## Peers connected to the host that did not introduce themselves yet.
 var _pending_peers: Array[int] = []
+## Members asked to leave and not gone yet: nothing they ask is accepted anymore.
+var _dismissed_peers: Array[int] = []
 ## Incremented on every reset, so timers started for a previous lobby are ignored.
 var _session: int = 0
 
@@ -66,6 +68,7 @@ func reset() -> void:
 	local_member = null
 	_banned_user_ids.clear()
 	_pending_peers.clear()
+	_dismissed_peers.clear()
 
 func is_host() -> bool:
 	return local_member != null and local_member.is_host
@@ -92,21 +95,25 @@ func set_lobby_data(key: String, value: Variant) -> void:
 	for peer_id: int in _remote_peers():
 		_lobby_data_set.rpc_id(peer_id, key, value)
 
-## Host only. Removes a player from the lobby. With `ban`, the same user is refused
+## Host only. Asks a player to leave the lobby. With `ban`, the same user is refused
 ## until the lobby closes.
+## The player stays a member until it is really gone, which takes at most
+## `LobbyConfig.dismiss_grace`: it is asked to leave by itself, because some backends
+## (Steam) cannot remove a lobby member, and because what it was still sending must
+## reach the others before they forget it.
 func dismiss(peer_id: int, reason: LobbyTypes.Reason, ban: bool = false) -> void:
 	if not multiplayer.is_server() or peer_id == MultiplayerPeer.TARGET_PEER_SERVER:
 		return
 	var member: LobbyMember = get_member(peer_id)
-	if member != null:
-		if ban and not _banned_user_ids.has(member.user_id):
-			_banned_user_ids.append(member.user_id)
-		_remove_member(peer_id)
+	if member != null and ban and not _banned_user_ids.has(member.user_id):
+		_banned_user_ids.append(member.user_id)
 	_pending_peers.erase(peer_id)
 	if not multiplayer.get_peers().has(peer_id):
+		_remove_member(peer_id)
 		return
-	# The player is asked to leave by itself: some backends (Steam) cannot remove a lobby
-	# member, and cutting the connection right away would drop the notice.
+	if _dismissed_peers.has(peer_id):
+		return
+	_dismissed_peers.append(peer_id)
 	_dismissed.rpc_id(peer_id, reason)
 	_disconnect_later(peer_id, _config.dismiss_grace)
 
@@ -129,8 +136,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_pending_peers.erase(peer_id)
-	if members.has(peer_id):
-		_remove_member(peer_id)
+	_dismissed_peers.erase(peer_id)
+	_remove_member(peer_id)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _hello(claim: Dictionary) -> void:
@@ -243,8 +250,9 @@ func _disconnect_later(peer_id: int, delay: float, only_if_pending: bool = false
 			if only_if_pending and not _pending_peers.has(peer_id):
 				return
 			if multiplayer.is_server() and multiplayer.get_peers().has(peer_id):
-				_pending_peers.erase(peer_id)
 				multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+				# Not every transport reports a disconnection it started itself.
+				_on_peer_disconnected(peer_id)
 	)
 
 # --- Data --------------------------------------------------------------------------------
@@ -253,8 +261,9 @@ func _disconnect_later(peer_id: int, delay: float, only_if_pending: bool = false
 func _request_member_data(key: String, value: Variant) -> void:
 	if not multiplayer.is_server():
 		return
-	var member: LobbyMember = get_member(multiplayer.get_remote_sender_id())
-	if member != null:
+	var peer_id: int = multiplayer.get_remote_sender_id()
+	var member: LobbyMember = get_member(peer_id)
+	if member != null and not _dismissed_peers.has(peer_id):
 		_host_set_member_data(member, key, value)
 
 func _host_set_member_data(member: LobbyMember, key: String, value: Variant) -> void:
