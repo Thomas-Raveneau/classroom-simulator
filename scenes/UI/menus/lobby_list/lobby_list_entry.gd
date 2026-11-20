@@ -21,7 +21,7 @@ func _ready() -> void:
 	var is_full: bool = _info.max_members > 0 and _info.member_count >= _info.max_members
 	_count_label.visible = _info.max_members > 0 and _info.member_count > 0
 	_count_label.text = "%d/%d" % [_info.member_count, _info.max_members]
-	_join_button.disabled = is_full
+	_join_button.disabled = is_full or not _info.is_open
 
 func _on_join_button_pressed() -> void:
 	_lobby.join(_info.id)

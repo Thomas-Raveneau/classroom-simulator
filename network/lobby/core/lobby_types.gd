@@ -18,7 +18,8 @@ enum Visibility { PRIVATE, FRIENDS_ONLY, PUBLIC }
 enum Reason {
 	NONE,
 	VOLUNTARY,            ## The local player chose to leave.
-	HOST_LEFT,            ## The host closed the lobby or the connection to the host dropped.
+	HOST_LEFT,            ## The host closed the lobby.
+	CONNECTION_LOST,      ## The connection to the host dropped. The player may be able to rejoin.
 	KICKED,
 	BANNED,               ## Kicked earlier in this session.
 	LOBBY_FULL,
@@ -36,6 +37,7 @@ const _REASON_TEXTS: Dictionary[Reason, String] = {
 	Reason.NONE: "",
 	Reason.VOLUNTARY: "",
 	Reason.HOST_LEFT: "The host left the lobby.",
+	Reason.CONNECTION_LOST: "The connection to the host was lost.",
 	Reason.KICKED: "You were kicked from the lobby.",
 	Reason.BANNED: "You cannot rejoin this lobby.",
 	Reason.LOBBY_FULL: "The lobby is full.",

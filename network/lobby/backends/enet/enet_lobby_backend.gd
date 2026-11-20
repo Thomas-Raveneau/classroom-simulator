@@ -9,11 +9,17 @@ extends LobbyBackend
 
 const ADDRESS: String = "127.0.0.1"
 const NAME_ARGUMENT: String = "--lobby-name="
+## Time a connection stays open after `leave()`, in seconds: what was sent just before
+## (a goodbye, a closing notice) must be received before the disconnection, or the
+## other side drops it.
+const CLOSE_DELAY: float = 0.2
 
 ## Port to host on / connect to. Defaults to `LobbyConfig.enet_port`.
 var port: int = 0
 
 var _peer: ENetMultiplayerPeer
+## Connections left and about to close.
+var _closing_peers: Array[ENetMultiplayerPeer] = []
 var _identity: Dictionary = {}
 
 func setup(_config: LobbyConfig) -> void:
@@ -50,9 +56,23 @@ func join(lobby_id: int) -> void:
 	_emit_deferred(lobby_joined, lobby_id if lobby_id > 0 else port)
 
 func leave() -> void:
-	if _peer != null:
-		_peer.close()
-		_peer = null
+	# A connection still closing would keep the port of a new server busy.
+	_close_pending_peers()
+	if _peer == null:
+		return
+	var peer: ENetMultiplayerPeer = _peer
+	_peer = null
+	if peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		peer.close()
+		return
+	peer.host.flush()
+	_closing_peers.append(peer)
+	get_tree().create_timer(CLOSE_DELAY).timeout.connect(_close_pending_peers)
+
+func _close_pending_peers() -> void:
+	for peer: ENetMultiplayerPeer in _closing_peers:
+		peer.close()
+	_closing_peers.clear()
 
 func get_peer() -> MultiplayerPeer:
 	return _peer
@@ -66,10 +86,6 @@ func resolve_identity(_peer_id: int, claim: Dictionary) -> Dictionary:
 	if user_id is not int or user_name is not String:
 		return {}
 	return { "user_id": user_id, "name": user_name }
-
-func set_joinable(joinable: bool) -> void:
-	if _peer != null:
-		_peer.refuse_new_connections = not joinable
 
 ## There is no discovery: always offers the local server, whether it runs or not.
 func request_lobby_list() -> void:

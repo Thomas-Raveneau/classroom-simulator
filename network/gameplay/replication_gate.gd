@@ -55,6 +55,9 @@ func _is_peer_ready(peer_id: int) -> bool:
 	return _lobby == null or _lobby.is_peer_scene_ready(peer_id)
 
 func _update_visibility() -> void:
+	# Nothing to update on a connection that just died: the lobby is about to be left.
+	if multiplayer.multiplayer_peer.get_connection_status() != MultiplayerPeer.CONNECTION_CONNECTED:
+		return
 	# The gate first: the object must be spawned before its synchronizers send anything.
 	update_visibility()
 	for synchronizer: MultiplayerSynchronizer in _gated_synchronizers:

@@ -59,3 +59,9 @@ func scene_of(test_peer: LobbyTestPeer) -> LobbyTestGameScene:
 func until(condition: Callable, text: String) -> void:
 	await wait_until(condition, WAIT)
 	assert_true(condition.call(), text)
+
+## Ends the connection of a client as a network failure would: neither side said it was
+## leaving, the host just finds the member gone.
+func cut_connection(host: LobbyTestPeer, client: LobbyTestPeer) -> void:
+	host.service._member_sync.drop(client.service.local_member.peer_id)
+	await until(func() -> bool: return client.service.state == LobbyTypes.State.NONE, "client lost the connection")

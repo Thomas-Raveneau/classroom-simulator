@@ -143,6 +143,7 @@ func test_host_leaving_closes_the_lobby_for_clients() -> void:
 	assert_signal_emitted_with_parameters(client.service, "left", [LobbyTypes.Reason.HOST_LEFT])
 	assert_eq(client.service.last_reason, LobbyTypes.Reason.HOST_LEFT)
 	assert_eq(client.service.members.size(), 0)
+	assert_false(client.service.can_rejoin(), "nothing to come back to")
 
 func test_kicked_player_is_told_and_cannot_come_back() -> void:
 	var host: LobbyTestPeer = await _add_host()
@@ -306,7 +307,9 @@ func test_locked_lobby_refuses_players_during_the_game() -> void:
 	await _start_game(host, others)
 	var late: LobbyTestPeer = await _add_client()
 	assert_eq(late.service.state, LobbyTypes.State.NONE)
-	assert_signal_emitted(late.service, "join_failed")
+	assert_signal_emitted_with_parameters(
+		late.service, "join_failed", [LobbyTypes.Reason.GAME_IN_PROGRESS]
+	)
 	assert_eq(host.service.members.size(), 1)
 
 func test_player_joining_in_progress_loads_the_game() -> void:

@@ -38,10 +38,13 @@ signal invite_received(invite: LobbyInvite)
 signal invites_changed
 signal friends_changed
 signal lobby_list_received(lobbies: Array[LobbyInfo])
+## Host: the list of disconnected members whose seat is kept changed (`get_absent_members()`).
+signal absent_members_changed
 
 const LOBBY_NAME_KEY: String = "name"
 const BACKEND_NAME_KEY: String = "name"
 const BACKEND_IN_GAME_KEY: String = "in_game"
+const BACKEND_OPEN_KEY: String = "open"
 
 static var _services: Array[LobbyService] = []
 
@@ -85,6 +88,9 @@ var _scene_sync: LobbySceneSync
 var _ping: LobbyPing
 ## Incremented whenever a create / join attempt starts or ends: invalidates its timeout.
 var _attempt: int = 0
+## Lobby of the game the local player was disconnected from, 0 when there is none.
+var _rejoin_lobby_id: int = 0
+var _rejoin_until_msec: int = 0
 
 ## Returns the service a node belongs to (the one sharing its multiplayer API).
 static func for_node(node: Node) -> LobbyService:
@@ -114,7 +120,8 @@ func setup(_config: LobbyConfig, _backend: LobbyBackend, _scene_loader: LobbySce
 	add_child(_scene_sync)
 	_ping = LobbyPing.new()
 	_ping.name = "Ping"
-	_ping.setup(_member_sync)
+	_ping.setup(config, _member_sync)
+	_member_sync.seat_policy = _scene_sync.is_game_active
 	add_child(_ping)
 	_connect_signals()
 
@@ -153,8 +160,33 @@ func join(target_lobby_id: int) -> void:
 	backend.join(target_lobby_id)
 
 func leave() -> void:
-	if state != LobbyTypes.State.NONE:
-		_leave(LobbyTypes.Reason.VOLUNTARY)
+	if state == LobbyTypes.State.NONE:
+		return
+	# Said before the connection closes, so the others know it is deliberate.
+	if is_host():
+		_member_sync.announce_closing()
+	else:
+		_member_sync.announce_departure()
+	_rejoin_lobby_id = 0
+	_leave(LobbyTypes.Reason.VOLUNTARY)
+
+## True when the local player lost its connection during a game and its seat is still
+## kept by the host (`LobbyConfig.reconnect_grace`).
+func can_rejoin() -> bool:
+	return (
+		state == LobbyTypes.State.NONE and _rejoin_lobby_id != 0
+		and Time.get_ticks_msec() < _rejoin_until_msec
+	)
+
+## Comes back to the game that was lost. Answers like `join()`.
+func rejoin() -> void:
+	if can_rejoin():
+		join(_rejoin_lobby_id)
+
+## Host only. The members who lost their connection during the game and whose seat is
+## kept: their name and data, with a peer id of 0.
+func get_absent_members() -> Array[LobbyMember]:
+	return _member_sync.get_absent_members()
 
 # --- Members -----------------------------------------------------------------------------
 
@@ -219,8 +251,11 @@ func can_start_game() -> bool:
 func start_game(scene_path: String = "") -> bool:
 	if not can_start_game():
 		return false
-	if not config.allow_join_in_progress:
-		backend.set_joinable(false)
+	# The lobby stays enterable for the players allowed to come in during the game: anyone
+	# with join in progress, the holders of a reserved seat otherwise. The host decides
+	# who is admitted.
+	backend.set_joinable(config.allow_join_in_progress or config.reconnect_grace > 0.0)
+	backend.set_lobby_data(BACKEND_OPEN_KEY, "1" if config.allow_join_in_progress else "0")
 	backend.set_lobby_data(BACKEND_IN_GAME_KEY, "1")
 	_scene_sync.order_load(
 		scene_path if not scene_path.is_empty() else config.game_scene, LobbyTypes.State.IN_GAME
@@ -241,7 +276,10 @@ func return_to_lobby() -> void:
 		return
 	for member: LobbyMember in get_members():
 		set_member_data(LobbyMember.READY_KEY, null, member)
+	# The game is over: nobody has a seat to come back to.
+	_member_sync.clear_seats()
 	backend.set_joinable(true)
+	backend.set_lobby_data(BACKEND_OPEN_KEY, "1")
 	backend.set_lobby_data(BACKEND_IN_GAME_KEY, "0")
 	_scene_sync.order_load(config.lobby_scene, LobbyTypes.State.IN_LOBBY)
 
@@ -299,6 +337,9 @@ func _connect_signals() -> void:
 	_member_sync.lobby_data_changed.connect(lobby_data_changed.emit)
 	_member_sync.admitted.connect(_on_admitted)
 	_member_sync.dismissed.connect(_on_dismissed)
+	_member_sync.seats_changed.connect(absent_members_changed.emit)
+	_ping.member_unreachable.connect(_member_sync.drop)
+	_ping.host_unreachable.connect(_end_later.bind(LobbyTypes.Reason.CONNECTION_LOST))
 	_scene_sync.load_started.connect(_on_scene_load_started)
 	_scene_sync.completed.connect(_on_scene_completed)
 	_scene_sync.peer_ready.connect(_on_scene_peer_ready)
@@ -314,7 +355,9 @@ func _set_state(new_state: LobbyTypes.State) -> void:
 ## Common start of create() and join(). Returns false when the attempt cannot start.
 func _begin_attempt(attempt_state: LobbyTypes.State, failure: Signal) -> bool:
 	if state != LobbyTypes.State.NONE:
-		_leave(LobbyTypes.Reason.VOLUNTARY)
+		var rejoin_lobby_id: int = _rejoin_lobby_id
+		leave()
+		_rejoin_lobby_id = rejoin_lobby_id
 	last_reason = LobbyTypes.Reason.NONE
 	if not is_available():
 		last_reason = LobbyTypes.Reason.BACKEND_UNAVAILABLE
@@ -359,15 +402,22 @@ func _end_later(reason: LobbyTypes.Reason) -> void:
 func _teardown(reason: LobbyTypes.Reason) -> void:
 	_attempt += 1
 	last_reason = reason
+	if reason == LobbyTypes.Reason.CONNECTION_LOST and _scene_sync.is_game_active() and config.reconnect_grace > 0.0:
+		# The host keeps the seat for that long: remember where to come back.
+		_rejoin_lobby_id = lobby_id
+		_rejoin_until_msec = Time.get_ticks_msec() + roundi(config.reconnect_grace * 1000.0)
 	lobby_id = 0
-	_scene_sync.reset()
-	_member_sync.reset()
+	# The connection goes first: the resets below make the game scene stop replicating,
+	# which must not be attempted on a connection that is already dead.
 	backend.leave()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	_scene_sync.reset()
+	_member_sync.reset()
 	_set_state(LobbyTypes.State.NONE)
 
-func _check_admission(_user_id: int) -> LobbyTypes.Reason:
-	if _scene_sync.is_game_active() and not config.allow_join_in_progress:
+func _check_admission(_user_id: int, has_seat: bool) -> LobbyTypes.Reason:
+	# A player coming back to its seat is always let in.
+	if _scene_sync.is_game_active() and not config.allow_join_in_progress and not has_seat:
 		return LobbyTypes.Reason.GAME_IN_PROGRESS
 	return LobbyTypes.Reason.NONE
 
@@ -380,6 +430,7 @@ func _on_backend_lobby_created(new_lobby_id: int) -> void:
 	if state != LobbyTypes.State.CREATING:
 		return
 	_attempt += 1
+	_rejoin_lobby_id = 0
 	lobby_id = new_lobby_id
 	multiplayer.multiplayer_peer = backend.get_peer()
 	_member_sync.start_host()
@@ -387,6 +438,7 @@ func _on_backend_lobby_created(new_lobby_id: int) -> void:
 	set_lobby_data(LOBBY_NAME_KEY, new_lobby_name)
 	backend.set_lobby_data(BACKEND_NAME_KEY, new_lobby_name)
 	backend.set_lobby_data(BACKEND_IN_GAME_KEY, "0")
+	backend.set_lobby_data(BACKEND_OPEN_KEY, "1")
 	_set_state(LobbyTypes.State.IN_LOBBY)
 	created.emit()
 	entered.emit()
@@ -413,6 +465,7 @@ func _on_admitted() -> void:
 	if state != LobbyTypes.State.JOINING:
 		return
 	_attempt += 1
+	_rejoin_lobby_id = 0
 	_set_state(LobbyTypes.State.IN_LOBBY)
 	joined.emit()
 	entered.emit()
@@ -424,10 +477,12 @@ func _on_connection_failed() -> void:
 	_end_later(LobbyTypes.Reason.CONNECTION_FAILED)
 
 func _on_server_disconnected() -> void:
+	# A host that leaves on purpose says so first (see `leave()`): without that notice,
+	# the connection was lost.
 	if state == LobbyTypes.State.JOINING:
 		_end_later(LobbyTypes.Reason.CONNECTION_FAILED)
 	else:
-		_end_later(LobbyTypes.Reason.HOST_LEFT)
+		_end_later(LobbyTypes.Reason.CONNECTION_LOST)
 
 func _on_scene_load_started(_path: String, _target_state: LobbyTypes.State) -> void:
 	_set_state(LobbyTypes.State.LOADING)

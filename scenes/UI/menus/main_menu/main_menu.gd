@@ -5,6 +5,7 @@ extends Control
 @onready var _create_button: Button = %CreateButton
 @onready var _join_button: Button = %JoinButton
 @onready var _notice_label: Label = %NoticeLabel
+@onready var _rejoin_button: Button = %RejoinButton
 
 var _lobby: LobbyService
 
@@ -19,6 +20,13 @@ func _ready() -> void:
 		_create_button.disabled = true
 		_join_button.disabled = true
 		_show_reason(LobbyTypes.Reason.BACKEND_UNAVAILABLE)
+
+func _process(_delta: float) -> void:
+	# Offered as long as the host keeps the seat of the player.
+	_rejoin_button.visible = _lobby.can_rejoin()
+
+func _on_rejoin_button_pressed() -> void:
+	_lobby.rejoin()
 
 func _show_reason(reason: LobbyTypes.Reason) -> void:
 	_notice_label.text = LobbyTypes.reason_text(reason)

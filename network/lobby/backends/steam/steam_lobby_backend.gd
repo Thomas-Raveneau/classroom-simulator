@@ -14,6 +14,7 @@ const KEY_PROTOCOL: String = "protocol_version"
 const KEY_HOST: String = "host_id"
 const KEY_NAME: String = "name"
 const KEY_IN_GAME: String = "in_game"
+const KEY_OPEN: String = "open"
 ## Passed by Steam when the game is launched from an invitation: `+connect_lobby <id>`.
 const CONNECT_ARGUMENT: String = "+connect_lobby"
 
@@ -115,8 +116,6 @@ func set_joinable(joinable: bool) -> void:
 	if _lobby_id == 0:
 		return
 	Steam.setLobbyJoinable(_lobby_id, joinable)
-	if _peer != null:
-		_peer.refuse_new_connections = not joinable
 
 func set_visibility(visibility: LobbyTypes.Visibility) -> void:
 	if _lobby_id != 0:
@@ -283,6 +282,7 @@ func _list_lobby(lobby_id: int, has_friend: bool) -> bool:
 	info.member_count = Steam.getNumLobbyMembers(lobby_id)
 	info.max_members = Steam.getLobbyMemberLimit(lobby_id)
 	info.in_game = Steam.getLobbyData(lobby_id, KEY_IN_GAME) == "1"
+	info.is_open = Steam.getLobbyData(lobby_id, KEY_OPEN) != "0"
 	info.has_friend = info.has_friend or has_friend or _friends.get_lobby_ids().has(lobby_id)
 	return true
 

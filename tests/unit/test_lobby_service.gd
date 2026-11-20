@@ -179,11 +179,13 @@ func test_visibility_change_reaches_the_backend() -> void:
 	)
 
 func test_start_game_loads_the_scene_and_locks_the_lobby() -> void:
+	_config.reconnect_grace = 0.0
 	await _create_lobby()
 	assert_true(_service.start_game())
 	assert_eq(_service.state, LobbyTypes.State.LOADING)
 	assert_false(_backend.joinable)
 	assert_eq(_backend.published_data.get("in_game"), "1")
+	assert_eq(_backend.published_data.get("open"), "0")
 	await wait_for_signal(_service.game_started, WAIT)
 	assert_eq(_service.state, LobbyTypes.State.IN_GAME)
 	assert_eq(_loader.current_path, GAME_SCENE)
@@ -192,9 +194,18 @@ func test_start_game_loads_the_scene_and_locks_the_lobby() -> void:
 
 func test_start_game_keeps_the_lobby_open_when_joining_in_progress_is_allowed() -> void:
 	_config.allow_join_in_progress = true
+	_config.reconnect_grace = 0.0
 	await _create_lobby()
 	_service.start_game()
 	assert_true(_backend.joinable)
+	assert_eq(_backend.published_data.get("open"), "1")
+
+func test_start_game_keeps_the_lobby_enterable_for_reconnections() -> void:
+	_config.reconnect_grace = 30.0
+	await _create_lobby()
+	_service.start_game()
+	assert_true(_backend.joinable, "a disconnected player must be able to come back")
+	assert_eq(_backend.published_data.get("open"), "0", "but the lobby is shown as closed")
 
 func test_start_game_accepts_another_scene() -> void:
 	await _create_lobby()

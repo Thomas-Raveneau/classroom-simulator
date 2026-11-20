@@ -16,6 +16,8 @@ signal lobby_data_changed(key: String)
 signal admitted
 ## Client: the host asked the local player to leave.
 signal dismissed(reason: LobbyTypes.Reason)
+## Host: a seat was reserved for a disconnected member, taken back or released.
+signal seats_changed
 
 const MAX_KEY_LENGTH: int = 64
 const MAX_VALUE_BYTES: int = 4096
@@ -26,9 +28,12 @@ var local_member: LobbyMember
 ## Data shared by the whole lobby (selected map, game mode...). Only the host writes it.
 var lobby_data: Dictionary[String, Variant] = {}
 
-## Host: extra admission rule, `func(user_id: int) -> LobbyTypes.Reason`.
+## Host: extra admission rule, `func(user_id: int, has_seat: bool) -> LobbyTypes.Reason`.
+## `has_seat` is true for a player coming back to the seat kept for it.
 ## Return `Reason.NONE` to admit the player.
 var admission_check: Callable
+## Host: `func() -> bool`, whether a member losing its connection now keeps its seat.
+var seat_policy: Callable
 ## Host: optional validation of member data, `func(member: LobbyMember, key: String, value: Variant) -> bool`.
 var data_validator: Callable
 ## Keys of member data only the host may write: a request of a member for one of them is
@@ -42,6 +47,11 @@ var _banned_user_ids: Array[int] = []
 var _pending_peers: Array[int] = []
 ## Members asked to leave and not gone yet: nothing they ask is accepted anymore.
 var _dismissed_peers: Array[int] = []
+## Members who announced they leave on purpose: no seat is kept for them.
+var _leaving_peers: Array[int] = []
+## Host: seats kept for members whose connection ended, by user id. The seat holds what
+## the member will get back: its name and data.
+var _seats: Dictionary[int, LobbyMember] = {}
 ## Incremented on every reset, so timers started for a previous lobby are ignored.
 var _session: int = 0
 
@@ -72,6 +82,8 @@ func reset() -> void:
 	_banned_user_ids.clear()
 	_pending_peers.clear()
 	_dismissed_peers.clear()
+	_leaving_peers.clear()
+	clear_seats()
 
 func is_host() -> bool:
 	return local_member != null and local_member.is_host
@@ -125,6 +137,57 @@ func dismiss(peer_id: int, reason: LobbyTypes.Reason, ban: bool = false) -> void
 	_dismissed.rpc_id(peer_id, reason)
 	_disconnect_later(peer_id, _config.dismiss_grace)
 
+## Host only. Treats a member as disconnected right now (it stopped answering).
+func drop(peer_id: int) -> void:
+	if not multiplayer.is_server() or peer_id == MultiplayerPeer.TARGET_PEER_SERVER:
+		return
+	_close_connection(peer_id)
+	_on_peer_disconnected(peer_id)
+
+## Client: tells the host the departure is deliberate, so no seat is kept.
+func announce_departure() -> void:
+	if local_member != null and not multiplayer.is_server() and _is_connected():
+		_goodbye.rpc_id(MultiplayerPeer.TARGET_PEER_SERVER)
+
+## Host: tells every member the lobby closes, so they do not take it for a connection loss.
+func announce_closing() -> void:
+	if is_host():
+		for peer_id: int in _remote_peers():
+			_dismissed.rpc_id(peer_id, LobbyTypes.Reason.HOST_LEFT)
+
+# --- Seats -------------------------------------------------------------------------------
+
+## Host: the members whose seat is kept while they are disconnected (their peer id is 0).
+func get_absent_members() -> Array[LobbyMember]:
+	var absent_members: Array[LobbyMember] = []
+	absent_members.assign(_seats.values())
+	return absent_members
+
+func clear_seats() -> void:
+	if not _seats.is_empty():
+		_seats.clear()
+		seats_changed.emit()
+
+func _reserve_seat(member: LobbyMember) -> void:
+	var seat: LobbyMember = LobbyMember.new(0, member.user_id, member.name)
+	seat.data = member.data.duplicate()
+	seat.data.erase(LobbyMember.PING_KEY)
+	_seats[member.user_id] = seat
+	seats_changed.emit()
+	get_tree().create_timer(_config.reconnect_grace).timeout.connect(
+		func() -> void:
+			# Still the same seat: not taken back, not replaced by a later disconnection.
+			if _seats.get(member.user_id) == seat:
+				_seats.erase(member.user_id)
+				seats_changed.emit()
+	)
+
+func _find_member_of_user(user_id: int) -> LobbyMember:
+	for member: LobbyMember in members.values():
+		if member.user_id == user_id:
+			return member
+	return null
+
 # --- Admission ---------------------------------------------------------------------------
 
 func _on_connected_to_server() -> void:
@@ -144,8 +207,18 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	if not multiplayer.is_server():
 		return
 	_pending_peers.erase(peer_id)
+	# The only place deciding whether a seat is kept: for a connection that ended without
+	# the member being asked to leave nor announcing it.
+	var keeps_seat: bool = not _dismissed_peers.has(peer_id) and not _leaving_peers.has(peer_id)
 	_dismissed_peers.erase(peer_id)
-	_remove_member(peer_id)
+	_leaving_peers.erase(peer_id)
+	_remove_member(peer_id, keeps_seat)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _goodbye() -> void:
+	var peer_id: int = multiplayer.get_remote_sender_id()
+	if multiplayer.is_server() and members.has(peer_id) and not _leaving_peers.has(peer_id):
+		_leaving_peers.append(peer_id)
 
 @rpc("any_peer", "call_remote", "reliable")
 func _hello(claim: Dictionary) -> void:
@@ -169,6 +242,7 @@ func _hello(claim: Dictionary) -> void:
 	var member: LobbyMember = LobbyMember.new(
 		peer_id, _read_int(identity, "user_id"), _read_string(identity, "name")
 	)
+	_restore_returning_member(member)
 	var other_peers: Array[int] = _remote_peers()
 	members[peer_id] = member
 	var snapshot: Array[Dictionary] = []
@@ -192,12 +266,35 @@ func _check_admission(identity: Dictionary) -> LobbyTypes.Reason:
 	var user_id: int = _read_int(identity, "user_id")
 	if _banned_user_ids.has(user_id):
 		return LobbyTypes.Reason.BANNED
-	if members.size() >= _config.max_players:
+	# The same user on an older connection: it comes back before the host noticed that
+	# its previous connection was dead. Nobody can come back as the host.
+	var previous: LobbyMember = _find_member_of_user(user_id)
+	if previous != null and previous.is_host:
+		return LobbyTypes.Reason.CONNECTION_FAILED
+	var has_seat: bool = previous != null or _seats.has(user_id)
+	# Reserved seats are taken; the one of this user is its own.
+	var taken_seats: int = members.size() + _seats.size() - (1 if has_seat else 0)
+	if taken_seats >= _config.max_players:
 		return LobbyTypes.Reason.LOBBY_FULL
 	if admission_check.is_valid():
-		var result: LobbyTypes.Reason = admission_check.call(user_id)
+		var result: LobbyTypes.Reason = admission_check.call(user_id, has_seat)
 		return result
 	return LobbyTypes.Reason.NONE
+
+## Gives a returning user what it had: from its reserved seat, or from the member it still
+## was on a connection that is dead, which is removed.
+func _restore_returning_member(member: LobbyMember) -> void:
+	var previous: LobbyMember = _find_member_of_user(member.user_id)
+	if previous != null:
+		member.data = previous.data.duplicate()
+		var previous_peer_id: int = previous.peer_id
+		_remove_member(previous_peer_id)
+		_close_connection(previous_peer_id)
+	elif _seats.has(member.user_id):
+		member.data = _seats[member.user_id].data.duplicate()
+		_seats.erase(member.user_id)
+		seats_changed.emit()
+	member.data.erase(LobbyMember.PING_KEY)
 
 @rpc("authority", "call_remote", "reliable")
 func _snapshot(member_dicts: Array, data: Dictionary) -> void:
@@ -235,9 +332,12 @@ func _member_removed(peer_id: int) -> void:
 func _dismissed(reason: LobbyTypes.Reason) -> void:
 	dismissed.emit(reason)
 
-func _remove_member(peer_id: int) -> void:
-	if not members.has(peer_id):
+func _remove_member(peer_id: int, keeps_seat: bool = false) -> void:
+	var member: LobbyMember = get_member(peer_id)
+	if member == null:
 		return
+	if keeps_seat and _config.reconnect_grace > 0.0 and seat_policy.is_valid() and seat_policy.call() == true:
+		_reserve_seat(member)
 	_erase_member(peer_id)
 	for other_peer_id: int in _remote_peers():
 		_member_removed.rpc_id(other_peer_id, peer_id)
@@ -258,7 +358,7 @@ func _disconnect_later(peer_id: int, delay: float, only_if_pending: bool = false
 			if only_if_pending and not _pending_peers.has(peer_id):
 				return
 			if multiplayer.is_server() and multiplayer.get_peers().has(peer_id):
-				multiplayer.multiplayer_peer.disconnect_peer(peer_id)
+				_close_connection(peer_id)
 				# Not every transport reports a disconnection it started itself.
 				_on_peer_disconnected(peer_id)
 	)
@@ -318,6 +418,23 @@ func _is_valid_entry(key: String, value: Variant) -> bool:
 	return var_to_bytes(value).size() <= MAX_VALUE_BYTES
 
 # --- Helpers -----------------------------------------------------------------------------
+
+## Host: closes the connection with a peer at once. The multiplayer API forgets the peer
+## immediately, so nothing more is sent to a connection that is closing.
+func _close_connection(peer_id: int) -> void:
+	if not multiplayer.get_peers().has(peer_id):
+		return
+	var scene_multiplayer: SceneMultiplayer = multiplayer as SceneMultiplayer
+	if scene_multiplayer != null:
+		scene_multiplayer.disconnect_peer(peer_id)
+	else:
+		multiplayer.multiplayer_peer.disconnect_peer(peer_id, true)
+
+func _is_connected() -> bool:
+	return (
+		multiplayer.has_multiplayer_peer()
+		and multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
+	)
 
 ## Peer ids of every admitted member except the local one.
 func _remote_peers() -> Array[int]:

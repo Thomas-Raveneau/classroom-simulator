@@ -69,7 +69,9 @@ func get_local_identity() -> Dictionary:
 func resolve_identity(_peer_id: int, _claim: Dictionary) -> Dictionary:
 	return {}
 
-## Host only. Allows or forbids new players to join.
+## Host only. Allows or forbids entering the lobby at the level of the backend, when it
+## can refuse with an answer (a Steam lobby). Do not make the transport refuse
+## connections: a player would wait for nothing instead of being told why.
 func set_joinable(_joinable: bool) -> void:
 	pass
 

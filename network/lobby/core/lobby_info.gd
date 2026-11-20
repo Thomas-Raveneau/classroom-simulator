@@ -7,6 +7,8 @@ var name: String = ""
 var member_count: int = 0
 var max_members: int = 0
 var in_game: bool = false
+## False when the lobby does not take new players (game started, joining in progress off).
+var is_open: bool = true
 ## True when a friend sits in this lobby.
 var has_friend: bool = false
 

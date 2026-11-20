@@ -17,6 +17,9 @@ const MENUS_DIR: String = "res://scenes/UI/menus/"
 @export var allow_join_in_progress: bool = false
 ## The host can only start once every player is ready.
 @export var require_all_ready: bool = false
+## How long, in seconds, the seat of a player who lost its connection during the game is
+## kept: coming back in time, the player gets its data and score back. 0 disables it.
+@export_range(0.0, 600.0) var reconnect_grace: float = 60.0
 
 @export_group("Scenes")
 @export_file("*.tscn") var main_menu_scene: String = MENUS_DIR + "main_menu/main_menu.tscn"
@@ -35,6 +38,10 @@ const MENUS_DIR: String = "res://scenes/UI/menus/"
 @export_range(1.0, 300.0) var load_timeout: float = 30.0
 ## Time left to a removed player to leave by itself before its connection is cut.
 @export_range(0.1, 10.0) var dismiss_grace: float = 2.0
+## A player (or the host) that does not answer for this long is considered disconnected.
+## 0 leaves it to the transport, which can take 30 seconds. Note that pausing an instance
+## in the debugger longer than this drops it from the lobby.
+@export_range(0.0, 60.0) var connection_timeout: float = 10.0
 
 @export_group("Backend")
 ## "steam" or "enet". Overridden by the command line argument `--lobby-backend=<name>`.
