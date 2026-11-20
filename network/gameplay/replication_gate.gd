@@ -37,6 +37,9 @@ func _enter_tree() -> void:
 		synchronizer.add_visibility_filter(_is_peer_ready)
 		_gated_synchronizers.append(synchronizer)
 	_lobby.scene_ready_peers_changed.connect(_update_visibility)
+	# The engine started replicating to every connected player when the synchronizers
+	# entered the tree, before the filter existed: apply it now, not at the next frame.
+	_update_visibility()
 
 func _exit_tree() -> void:
 	if _lobby == null:
@@ -55,5 +58,5 @@ func _update_visibility() -> void:
 	# The gate first: the object must be spawned before its synchronizers send anything.
 	update_visibility()
 	for synchronizer: MultiplayerSynchronizer in _gated_synchronizers:
-		if synchronizer != self and is_instance_valid(synchronizer):
+		if synchronizer != self and is_instance_valid(synchronizer) and synchronizer.is_inside_tree():
 			synchronizer.update_visibility()

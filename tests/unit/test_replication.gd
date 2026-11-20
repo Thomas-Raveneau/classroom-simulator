@@ -1,6 +1,6 @@
 extends GutTest
-## Real MultiplayerSpawner / MultiplayerSynchronizer replication between players of the
-## same process, to validate that ReplicationGate makes joining in progress safe.
+## Real spawner / synchronizer replication between players of the same process, to
+## validate that NetworkSpawner and ReplicationGate make joining in progress safe.
 
 const GAME_SCENE: String = "res://game.tscn"
 const LOBBY_SCENE: String = "res://lobby.tscn"
@@ -114,6 +114,46 @@ func test_player_joining_in_progress_gets_everything() -> void:
 	await _until(_pawn_value_is(late, host, 9), "late player receives updates of the host")
 	await _until(_pawn_value_is(client, late, 10), "client receives updates of the late player")
 	await _until(_pawn_value_is(host, late, 10), "host receives updates of the late player")
+	assert_engine_error_count(0)
+
+func test_spawned_object_gets_properties_name_and_gate() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	host.service.start_game()
+	await _until(func() -> bool: return _pawn_count(client) == 2, "client has both pawns")
+	var scene: LobbyTestGameScene = _scene(host)
+	var spawned: Node = scene.spawner.spawn_scene(scene.pawn_scene, { "value": 42 }, 1, "Extra")
+	assert_eq(spawned.name, &"Extra")
+	await _until(func() -> bool: return _scene(client).pawns.has_node("Extra"), "client received the object")
+	var received: LobbyTestPawn = _scene(client).pawns.get_node("Extra") as LobbyTestPawn
+	assert_eq(received.value, 42, "properties are applied on every player")
+	assert_true(received.has_node("ReplicationGate"), "a gate was added")
+	assert_null(_scene(client).spawner.spawn_scene(scene.pawn_scene), "a client cannot spawn")
+	assert_push_error("only the host can spawn")
+	spawned.queue_free()
+	await _until(func() -> bool: return not _scene(client).pawns.has_node("Extra"), "freed everywhere")
+
+func test_object_of_the_scene_reaches_a_player_joining_in_progress() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	# The host loads first and its beacon changes while the client has no scene yet.
+	client.loader.manual = true
+	host.service.start_game()
+	await wait_seconds(0.2)
+	_scene(host).beacon.value = 1
+	await wait_seconds(0.2)
+	client.loader.complete()
+	await _until(func() -> bool: return _scene(client) != null and _scene(client).beacon.value == 1, "client receives the beacon")
+	var late: LobbyTestPeer = _add_peer()
+	late.loader.manual = true
+	late.service.join(0)
+	await _until(func() -> bool: return late.service.state == LobbyTypes.State.LOADING, "late player is loading")
+	_scene(host).beacon.value = 2
+	await wait_seconds(0.3)
+	late.loader.complete()
+	await _until(func() -> bool: return _scene(late) != null and _scene(late).beacon.value == 2, "late player receives the beacon")
+	_scene(host).beacon.value = 3
+	await _until(func() -> bool: return _scene(late).beacon.value == 3 and _scene(client).beacon.value == 3, "updates keep flowing")
 	assert_engine_error_count(0)
 
 func test_pawn_of_a_leaving_player_is_removed_everywhere() -> void:

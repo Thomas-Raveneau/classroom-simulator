@@ -1,7 +1,6 @@
 [gd_scene load_steps=11 format=3 uid="uid://sh07mxo33ehw"]
 
 [ext_resource type="Script" uid="uid://d1bqo2oldhty4" path="res://scenes/gameplay/characters/player/player.gd" id="1_lcm6i"]
-[ext_resource type="Script" path="res://network/gameplay/replication_gate.gd" id="2_gate"]
 
 [sub_resource type="SceneReplicationConfig" id="SceneReplicationConfig_lcm6i"]
 properties/0/path = NodePath("Meshes:rotation")
@@ -43,9 +42,6 @@ script = ExtResource("1_lcm6i")
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_lcm6i")
-
-[node name="SpawnGate" type="MultiplayerSynchronizer" parent="."]
-script = ExtResource("2_gate")
 
 [node name="NameLabel" type="Label3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)

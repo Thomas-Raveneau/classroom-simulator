@@ -1,19 +1,29 @@
 class_name LobbyTestGameScene
 extends Node
-## Minimal game scene of the replication tests: a MultiplayerSpawner whose host spawns
-## one "pawn" per member having the scene loaded, as a real game would.
+## Minimal game scene of the replication tests: a NetworkSpawner whose host spawns one
+## "pawn" per member having the scene loaded, as a real game would, and a "beacon" that
+## belongs to the scene.
 
-var spawner: MultiplayerSpawner
+var spawner: NetworkSpawner
 var pawns: Node
+var beacon: LobbyTestBeacon
+var pawn_scene: PackedScene
 var _lobby: LobbyService
 
 func _init() -> void:
 	pawns = Node.new()
 	pawns.name = "Pawns"
 	add_child(pawns)
-	spawner = MultiplayerSpawner.new()
+	beacon = LobbyTestBeacon.new()
+	beacon.name = "Beacon"
+	add_child(beacon)
+	pawn_scene = PackedScene.new()
+	var pawn: LobbyTestPawn = LobbyTestPawn.new()
+	pawn_scene.pack(pawn)
+	pawn.free()
+	spawner = NetworkSpawner.new()
 	spawner.name = "Spawner"
-	spawner.spawn_function = _spawn_pawn
+	spawner.scenes = [pawn_scene]
 	add_child(spawner)
 
 func _ready() -> void:
@@ -27,15 +37,9 @@ func get_pawn(peer_id: int) -> LobbyTestPawn:
 	return pawns.get_node_or_null(str(peer_id)) as LobbyTestPawn
 
 func _on_member_scene_ready(member: LobbyMember) -> void:
-	spawner.spawn(member.peer_id)
+	spawner.spawn_scene(pawn_scene, {}, member.peer_id, str(member.peer_id))
 
 func _on_member_left(member: LobbyMember) -> void:
 	var pawn: LobbyTestPawn = get_pawn(member.peer_id)
 	if pawn != null:
 		pawn.queue_free()
-
-func _spawn_pawn(peer_id: int) -> Node:
-	var pawn: LobbyTestPawn = LobbyTestPawn.new()
-	pawn.name = str(peer_id)
-	pawn.set_multiplayer_authority(peer_id)
-	return pawn
