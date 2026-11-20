@@ -1,8 +1,13 @@
 # Réseau
 
-Le code réseau du jeu. `lobby/` gère le lobby : créer, rejoindre, inviter, se déclarer prêt, exclure, lancer la partie et revenir au lobby. Il fonctionne avec Steam (via GodotSteam) et, pour tester sans Steam, en local sur une seule machine (ENet). `gameplay/` contient les briques réseau utilisées pendant la partie.
+Le code réseau du jeu, en deux parties :
+
+- `lobby/` gère le lobby : créer, rejoindre, inviter, se déclarer prêt, exclure, lancer la partie, revenir au lobby, se reconnecter. Il fonctionne avec Steam (via GodotSteam) et, pour tester sans Steam, en local sur une seule machine (ENet).
+- `gameplay/` contient les briques réseau utilisées pendant la partie : état partagé, apparition d'objets, actions validées par l'hôte, déplacement fluide des autres joueurs.
 
 Le jeu ne parle au lobby que par un seul objet, l'autoload `Lobby`.
+
+**Qui décide de quoi.** Chaque joueur fait autorité sur le déplacement de son propre personnage. Tout le reste (qui est dans le lobby, les scores, qui ramasse quoi, où on réapparaît) est décidé par l'hôte.
 
 ## Régler le lobby
 
@@ -11,6 +16,26 @@ Les réglages sont dans `config/lobby_config.tres` (une ressource `LobbyConfig`)
 - `game_scene` : la scène de jeu à charger au lancement ;
 - `game_key` : un identifiant propre au jeu ;
 - `steam_app_id` : l'identifiant Steam du jeu (480 est l'app de test de Valve).
+
+| Réglage | Rôle |
+|---|---|
+| `max_players` | Nombre maximum de joueurs, hôte compris. |
+| `default_visibility` | Privé (sur invitation), amis, ou public. |
+| `game_key` | Distingue vos lobbies de ceux des autres jeux de la même app Steam. Indispensable avec l'app de test 480. |
+| `protocol_version` | À augmenter quand deux versions du jeu ne sont plus compatibles en réseau. |
+| `allow_join_in_progress` | Autorise un nouveau joueur à rejoindre une partie lancée. |
+| `require_all_ready` | L'hôte ne peut lancer que si tous les joueurs sont prêts. |
+| `reconnect_grace` | Durée pendant laquelle la place d'un joueur déconnecté en pleine partie est gardée. 0 pour désactiver. |
+| `main_menu_scene`, `lobby_list_scene`, `lobby_scene`, `game_scene` | Les scènes du parcours. |
+| `auto_navigation` | Le lobby enchaîne lui-même menu, lobby et jeu. À désactiver pour piloter les scènes depuis le code du jeu. |
+| `join_timeout`, `load_timeout`, `dismiss_grace` | Délais maximum, en secondes. |
+| `connection_timeout` | Délai sans réponse au-delà duquel un joueur (ou l'hôte) est considéré comme déconnecté. |
+| `default_backend` | `steam` ou `enet`. L'argument `--lobby-backend=` a priorité. |
+| `steam_app_id`, `enet_port` | Réglages des backends. |
+
+`allow_join_in_progress` ne fait que charger la scène et faire apparaître le nouveau joueur. `MatchState` lui transmet la phase, le chrono et les scores ; tout autre état propre au jeu reste à lui transmettre.
+
+Une instance mise en pause dans le débogueur plus longtemps que `connection_timeout` est retirée du lobby. Augmenter ce délai pendant une session de débogage, ou le mettre à 0.
 
 ## Tester en local, sans Steam
 
@@ -28,9 +53,9 @@ En ligne de commande :
 godot --path . -- --lobby-backend=enet --lobby-name=Alice
 ```
 
-Le backend ENet n'a ni amis, ni invitations, ni vraie liste de lobbies : les boutons correspondants sont masqués. Tout le reste (joueurs, données, prêt, exclusion, chargement, arrivée en cours de partie) se comporte comme sur Steam, parce que c'est synchronisé par RPC et non par Steam.
+Le backend ENet n'a ni amis, ni invitations, ni vraie liste de lobbies : les boutons correspondants sont masqués. Tout le reste se comporte comme sur Steam, parce que c'est synchronisé par RPC et non par Steam.
 
-## Utiliser le lobby depuis le jeu
+## Le lobby
 
 ### Créer, rejoindre, quitter
 
@@ -48,17 +73,20 @@ L'état courant est dans `Lobby.state` : `NONE`, `CREATING`, `JOINING`, `IN_LOBB
 
 ```gdscript
 for member: LobbyMember in Lobby.get_members():
-	print(member.name, member.is_host, member.is_ready)
+	print(member.name, member.is_host, member.is_ready, member.ping)
 
-Lobby.set_member_data("team", 2)       # sur soi-même
+Lobby.set_member_data("color", "red")  # sur soi-même
 Lobby.set_ready(true)
 Lobby.kick(member)                     # hôte uniquement
 ```
 
 - Signaux : `member_joined(member)`, `member_left(member)`, `member_updated(member, key)`.
 - Les données d'un joueur (`member.data`) sont libres : personnage, équipe, couleur. Un joueur n'écrit que les siennes, l'hôte peut écrire celles de tous.
+- `member.user_id` identifie l'utilisateur (son identifiant Steam) et ne change pas s'il se reconnecte. `member.peer_id` identifie sa connexion.
+- `member.ping` est la latence entre l'hôte et le joueur, en millisecondes, mesurée toutes les 2 secondes.
 - L'hôte valide chaque changement. Pour ajouter vos règles : `Lobby.member_data_validator = func(member, key, value) -> bool`.
-- `Lobby.set_lobby_data("map", "forest")` partage une donnée du lobby entier (hôte uniquement), lue avec `Lobby.get_lobby_data("map")`.
+- Pour réserver une donnée à l'hôte (une équipe attribuée par le jeu) : `Lobby.host_only_member_keys.append("team")`.
+- `Lobby.set_lobby_data("map", "forest")` partage une donnée du lobby entier (hôte uniquement), lue avec `Lobby.get_lobby_data("map")`. Elle survit aux changements de scène.
 
 ### Lancer la partie
 
@@ -68,50 +96,98 @@ Lobby.change_game_scene(path)          # hôte, en partie : niveau suivant
 Lobby.return_to_lobby()                # hôte, en partie : retour au lobby pour tous
 ```
 
-L'hôte attend que tous les joueurs aient chargé la scène. `game_started` est alors émis chez chacun.
+L'hôte attend que tous les joueurs aient chargé la scène. `game_started` est alors émis chez chacun, puis `member_scene_ready(member)` pour chaque joueur. Ce dernier signal est émis de nouveau pour chaque joueur qui arrive ou revient en cours de partie : c'est le moment de faire apparaître ce qui lui appartient.
 
-### Faire apparaître les joueurs
+### Reconnexion
 
-Deux règles suffisent.
+Quand la connexion d'un joueur tombe en pleine partie, l'hôte garde sa place pendant `reconnect_grace` (60 secondes par défaut) : son nom, ses données, et son score puisque `MatchState` le range par utilisateur.
 
-**1. Faire apparaître un joueur quand `member_scene_ready` est émis.** Ce signal est émis pour chaque joueur au lancement, puis pour chaque joueur arrivant en cours de partie. Côté hôte :
+- Le joueur reçoit `left(CONNECTION_LOST)`. `Lobby.can_rejoin()` devient vrai, et le menu principal affiche « Rejoin game » (`Lobby.rejoin()`).
+- À son retour, il retrouve ses données, charge la scène de jeu et `member_scene_ready` est émis pour lui : son personnage réapparaît.
+- Une place réservée compte dans `max_players`. Elle est libérée à la fin du délai ou au retour au lobby.
+- Un joueur qui quitte volontairement ou qui est exclu ne garde pas de place.
+- Côté hôte, `Lobby.get_absent_members()` liste les joueurs dont la place est gardée.
+
+Pendant une partie verrouillée (`allow_join_in_progress` désactivé), seuls les joueurs qui ont une place réservée sont admis.
+
+## Les briques de gameplay
+
+Elles se posent dans la scène de jeu. `scenes/maps/prototype/` et `scenes/gameplay/game/round/collect_round.gd` montrent comment elles s'assemblent.
+
+### `NetworkSpawner` : faire apparaître des objets
+
+Un `MultiplayerSpawner` pour les personnages, les objets à ramasser, les projectiles. Lister les scènes possibles dans `scenes`, régler `spawn_path`, puis côté hôte :
 
 ```gdscript
-extends MultiplayerSpawner
+var coin: Node = spawner.spawn_scene(coin_scene, { "position": Vector3(2, 1, 0) })
+coin.queue_free()                                  # disparaît chez tout le monde
 
-func _ready() -> void:
-	spawn_function = _create_player
-	if multiplayer.is_server():
-		Lobby.member_scene_ready.connect(func(member: LobbyMember) -> void: spawn(member.peer_id))
-
-func _create_player(peer_id: int) -> Node:
-	var player: Node = player_scene.instantiate()
-	player.name = str(peer_id)
-	player.set_multiplayer_authority(peer_id)
-	return player
+spawner.spawn_scene(player_scene, {}, member.peer_id, str(member.peer_id))  # donné à un joueur
 ```
 
-**2. Ajouter un nœud `ReplicationGate` comme enfant direct de chaque objet répliqué** de la scène de jeu (joueur, projectile, plateforme mobile). C'est un `MultiplayerSynchronizer` avec le script `network/gameplay/replication_gate.gd`, sans rien à configurer.
+Ce qu'un joueur possédait est libéré quand il quitte la partie.
 
-Sans lui, Godot réplique un objet vers un joueur dès qu'il est connecté, même s'il n'a pas encore chargé la scène. L'objet est alors perdu, et ses mises à jour n'arrivent plus jamais chez ce joueur.
+### `ReplicationGate` : ne rien envoyer trop tôt
 
-## Configuration (`LobbyConfig`)
+Godot réplique un objet vers un joueur dès qu'il est connecté, même s'il n'a pas encore chargé la scène. L'objet est alors perdu, et ses mises à jour n'arrivent plus jamais chez ce joueur.
 
-| Réglage | Rôle |
-|---|---|
-| `max_players` | Nombre maximum de joueurs, hôte compris. |
-| `default_visibility` | Privé (sur invitation), amis, ou public. |
-| `game_key` | Distingue vos lobbies de ceux des autres jeux de la même app Steam. Indispensable avec l'app de test 480. |
-| `protocol_version` | À augmenter quand deux versions du jeu ne sont plus compatibles en réseau. |
-| `allow_join_in_progress` | Autorise à rejoindre une partie lancée. Sinon le lobby est verrouillé pendant la partie. |
-| `require_all_ready` | L'hôte ne peut lancer que si tous les joueurs sont prêts. |
-| `main_menu_scene`, `lobby_list_scene`, `lobby_scene`, `game_scene` | Les scènes du parcours. |
-| `auto_navigation` | Le lobby enchaîne lui-même menu, lobby et jeu. À désactiver pour piloter les scènes depuis le code du jeu. |
-| `join_timeout`, `load_timeout`, `dismiss_grace` | Délais maximum, en secondes. |
-| `default_backend` | `steam` ou `enet`. L'argument `--lobby-backend=` a priorité. |
-| `steam_app_id`, `enet_port` | Réglages des backends. |
+- Les objets créés par `NetworkSpawner` sont protégés automatiquement.
+- Pour un objet répliqué **posé dans la scène** (une plateforme mobile avec son `MultiplayerSynchronizer`), ajouter un nœud `MultiplayerSynchronizer` avec le script `replication_gate.gd` comme enfant direct de l'objet, sans rien configurer.
 
-`allow_join_in_progress` ne fait que charger la scène et faire apparaître le nouveau joueur. Lui transmettre l'état de la partie en cours (scores, objets déjà ramassés) reste à la charge du jeu.
+### `MatchState` : l'état de la partie
+
+Un nœud tenu par l'hôte et connu de tous : la phase et son chrono, les scores, et toute autre valeur commune.
+
+```gdscript
+# Hôte
+match_state.start_phase(MatchState.PHASE_PLAYING, 60.0)
+match_state.add_score(member.user_id)
+match_state.set_value("target", 10)
+
+# Tout le monde
+match_state.phase_changed.connect(_on_phase_changed)
+print(match_state.time_left, match_state.get_score(user_id), match_state.get_ranking())
+```
+
+- `phase_time_elapsed(phase)` est émis à la fin du chrono : l'hôte décide de la suite.
+- Un joueur qui arrive en cours reçoit l'état complet.
+- Les scores et les noms sont rangés par `user_id` : un joueur parti reste dans le classement, et retrouve son score s'il revient.
+- L'état vit et meurt avec la scène de jeu. Ce qui doit survivre à un changement de scène va dans `Lobby.set_lobby_data()`.
+
+### `HostActions` : le joueur demande, l'hôte décide
+
+Pour tout ce qui compte dans la partie : ramasser, frapper, interagir, réapparaître.
+
+```gdscript
+# Sur chaque joueur, dans _ready()
+actions.register(&"collect", _can_collect, _collect)
+
+# Le joueur qui agit
+actions.request(&"collect", [coin.name])
+
+# Chez l'hôte uniquement
+func _can_collect(member: LobbyMember, arguments: Array) -> bool:
+	...  # vérifier le nombre et le type des arguments, la distance, la phase
+
+func _collect(member: LobbyMember, arguments: Array) -> void:
+	coin.queue_free()                        # répliqué par NetworkSpawner
+	match_state.add_score(member.user_id)    # répliqué par MatchState
+```
+
+- L'hôte sait qui demande grâce à la connexion, jamais grâce au message.
+- Les arguments viennent d'une autre machine : toujours les vérifier dans la fonction de validation. Envoyer un nom de nœud, pas un nœud.
+- `register()` accepte un délai minimum entre deux actions d'un même joueur, et une option pour rejouer l'action chez tous (un son, un effet).
+- `HostActions.find_for(self)` retrouve le nœud depuis n'importe quel objet de la scène.
+
+### `NetworkSmoother` : déplacement fluide des autres joueurs
+
+Un nœud enfant de l'objet. Le `MultiplayerSynchronizer` réplique `sync_position`, `sync_rotation` et `sync_teleport_count` de ce nœud au lieu de la position de l'objet. Chez les autres joueurs, l'objet glisse vers la dernière valeur reçue, ce qui permet de n'envoyer que 20 mises à jour par seconde (`replication_interval`).
+
+Après un déplacement instantané (réapparition, téléporteur), appeler `smoother.teleport()` chez le propriétaire : les autres placent l'objet d'un coup au lieu de le faire glisser.
+
+### Réapparition
+
+`PlayerSpawner` fait apparaître un personnage par joueur et gère la réapparition. Un personnage qui tombe sous `fall_limit` demande l'action `respawn` ; l'hôte choisit un point d'apparition et demande au propriétaire de s'y téléporter. Côté hôte, `player_spawner.respawn(peer_id)` fait la même chose à la demande du jeu.
 
 ## L'interface
 
@@ -123,21 +199,25 @@ Les écrans du lobby sont dans `scenes/UI/menus/` (menu principal, liste des lob
 
 ```
 interface, jeu  →  Lobby (LobbyService)  →  LobbyBackend (Steam ou ENet)
-                       ├─ MemberSync : joueurs, données, exclusion (RPC)
-                       └─ SceneSync  : chargement synchronisé (RPC)
+                       ├─ MemberSync : joueurs, données, exclusion, places réservées
+                       ├─ SceneSync  : chargement synchronisé
+                       └─ Ping       : latence, détection des joueurs injoignables
 ```
 
 | Dossier | Contenu |
 |---|---|
-| `network/lobby/core/` | La façade, le registre des joueurs, le chargement synchronisé, la config, la classe de base des backends. |
+| `network/lobby/core/` | La façade, le registre des joueurs, le chargement synchronisé, la latence, la config, la classe de base des backends. |
 | `network/lobby/backends/` | Steam et ENet. Seul `backends/steam/` connaît Steam. |
-| `network/gameplay/` | Les briques réseau de la partie (`ReplicationGate`). |
+| `network/gameplay/` | Les briques de la partie. |
 | `scenes/managers/` | Le chargeur de scènes (`SceneLoader`, utilisable seul) et l'enchaînement des écrans. |
 | `scenes/UI/menus/` | Les écrans du lobby. |
+| `scenes/gameplay/` | Le personnage, l'apparition des joueurs, la manche de collecte, le HUD. |
 
 Principes :
 - Les dépendances vont dans un seul sens. Un backend ne connaît ni la façade ni l'interface.
 - L'hôte fait autorité : il admet les joueurs, établit leur identité et valide leurs données.
+- Tout nœud qui reçoit des RPC a le même nom et le même chemin chez tous les joueurs.
+- On n'envoie rien sur la scène de jeu à un joueur qui ne l'a pas chargée. `Lobby.scene_ready_peers` donne ceux qui l'ont.
 - Le code de `scenes/` utilise l'autoload `Lobby`. Le code de `network/` ne le cite jamais par son nom et passe par `LobbyService.for_node(self)`, ce qui permet de faire tourner plusieurs joueurs dans un même test.
 
 ### Écrire un autre backend
@@ -151,7 +231,9 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit    # tests unitaires
 tests/e2e/run.sh                                               # le vrai jeu, à 3 instances
 ```
 
-Les tests unitaires font tourner plusieurs joueurs dans le même processus, sur une vraie connexion ENet. Le script `run.sh` lance trois instances du jeu : un hôte, un client et un joueur qui arrive en cours de partie.
+Les tests unitaires font tourner plusieurs joueurs dans le même processus, sur une vraie connexion ENet. `tests/support/game_test.gd` sert de base à un test qui a besoin d'une partie en cours.
+
+Le script `run.sh` lance trois instances du jeu : un hôte, un client et un joueur qui arrive en cours de partie. Ils vérifient les positions, la réapparition, le ramassage des pièces, les scores, une coupure de connexion suivie d'un retour, la fin de manche, l'exclusion et le départ de l'hôte.
 
 Pour ne pas embarquer les tests dans le jeu exporté, ajouter `tests/*, addons/gut/*` aux filtres d'exclusion des préréglages d'export.
 
@@ -160,19 +242,26 @@ Pour ne pas embarquer les tests dans le jeu exporté, ajouter `tests/*, addons/g
 Le backend Steam a été écrit sans pouvoir être exécuté : il compile avec GodotSteam 4.24, mais **aucun parcours Steam n'a encore été testé**. À faire avec deux comptes, sur deux machines ou une machine et une VM :
 
 - [ ] Créer un lobby, le voir chez un ami dans « Join lobby », le rejoindre.
-- [ ] Les noms des joueurs s'affichent chez tout le monde.
+- [ ] Les noms des joueurs et leur latence s'affichent chez tout le monde.
 - [ ] Inviter depuis la liste d'amis du lobby et depuis le bouton « Invite... ».
 - [ ] Accepter une invitation depuis le jeu, puis depuis l'overlay Steam.
 - [ ] Jeu fermé, accepter une invitation : le jeu se lance et arrive dans le lobby.
 - [ ] Lobby public : visible par un compte qui n'est pas ami. Lobby privé : invisible.
 - [ ] Lobby plein, lobby d'une autre `protocol_version` : refus avec le bon message.
-- [ ] Lancer la partie, jouer, revenir au lobby.
+- [ ] Lancer la partie : personnages visibles et fluides, pièces, scores, résultats, retour au lobby.
 - [ ] Exclure un joueur : il revient au menu avec le message, et ne peut pas revenir.
 - [ ] L'hôte quitte : les clients reviennent au menu avec « The host left the lobby ».
 - [ ] Rejoindre une partie en cours, avec `allow_join_in_progress` activé puis désactivé.
+- [ ] Couper le réseau d'un client en pleine partie, puis « Rejoin game » : il retrouve son score.
+- [ ] Un client quitte volontairement en pleine partie : sa place n'est pas gardée chez l'hôte.
+
+Deux points propres à Steam à surveiller pendant ces essais :
+- Le message d'un départ volontaire part juste avant la fermeture de la connexion. S'il n'arrive pas, la place du joueur est gardée pendant `reconnect_grace` : sans gravité, mais à constater.
+- Un lobby en partie reste joignable au niveau de Steam tant que `reconnect_grace` est positif, pour permettre le retour d'un joueur déconnecté. C'est l'hôte qui refuse les autres, avec le message « The game has already started ».
 
 ## Limites connues
 
 - Pas de migration d'hôte : quand l'hôte part, le lobby se ferme pour tous.
 - L'exclusion demande au joueur de partir, puis coupe sa connexion à l'hôte. Steam ne permet pas de retirer quelqu'un d'un lobby : un client modifié peut y rester inscrit, mais il n'est plus dans la partie.
+- Le déplacement d'un personnage n'est pas vérifié par l'hôte : un client modifié peut se déplacer comme il veut. Les actions de jeu, elles, sont validées.
 - Les textes de l'interface sont en anglais.

@@ -1,13 +1,13 @@
 # classroom-simulator
 
-Le début d'un jeu multijoueur Godot 4.7 : un lobby Steam complet et une première partie jouable à plusieurs, à remplacer au fur et à mesure par le vrai jeu.
+Le début d'un jeu multijoueur Godot 4.7 : un lobby Steam complet, les briques réseau du gameplay, et une première manche jouable à plusieurs (ramasser des pièces), à remplacer au fur et à mesure par le vrai jeu.
 
 ## Organisation
 
 | Dossier | Contenu |
 |---|---|
 | `network/` | Le code réseau : le lobby (`lobby/`) et les briques réseau de la partie (`gameplay/`). Voir [network/README.md](network/README.md). |
-| `scenes/` | Les scènes du jeu et leurs scripts : menus (`UI/`), personnage, spawn et HUD (`gameplay/`), maps (`maps/`), chargement des scènes (`managers/`). |
+| `scenes/` | Les scènes du jeu et leurs scripts : menus (`UI/`), personnage, apparition des joueurs, manche de collecte et HUD (`gameplay/`), maps (`maps/`), chargement des scènes (`managers/`). |
 | `config/` | Les réglages, dont `lobby_config.tres`. |
 | `assets/` | Textures et icônes. |
 | `tests/` | Tests automatiques. |
