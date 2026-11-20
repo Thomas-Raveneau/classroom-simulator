@@ -7,6 +7,9 @@ extends Node
 ## whose game scene is loaded, and a player joining in progress receives the whole state.
 ## Scores are kept by user id, not by connection: they survive a reconnection.
 ##
+## The state lives and dies with the game scene. What must survive a change of game
+## scene (a campaign total...) belongs in the lobby data (`Lobby.set_lobby_data()`).
+##
 ## This node receives RPCs: it must have the same name and path on every player.
 
 signal phase_changed(phase: StringName)
@@ -26,15 +29,20 @@ var phase: StringName = PHASE_WAITING
 var time_left: float = 0.0
 ## Score of each player, by user id (`LobbyMember.user_id`).
 var scores: Dictionary[int, int] = {}
+## Name of every player who took part in the match, by user id: also those who left since.
+var player_names: Dictionary[int, String] = {}
 
 var _values: Dictionary[String, Variant] = {}
 var _has_timer: bool = false
 var _lobby: LobbyService
+## Host: peers that received the whole state, and are sent every change since.
+var _synced_peers: Array[int] = []
 
 func _ready() -> void:
 	_lobby = LobbyService.for_node(self)
 	if _lobby != null and multiplayer.is_server():
 		_lobby.member_scene_ready.connect(_on_member_scene_ready)
+		_lobby.member_left.connect(_on_member_left)
 
 func _process(delta: float) -> void:
 	if not _has_timer:
@@ -79,32 +87,49 @@ func get_score(user_id: int) -> int:
 func get_value(key: String, default: Variant = null) -> Variant:
 	return _values.get(key, default)
 
-## User ids from the best score to the lowest.
+## User ids of every player of the match, from the best score to the lowest.
 func get_ranking() -> Array[int]:
-	var ranking: Array[int] = scores.keys()
-	ranking.sort_custom(func(a: int, b: int) -> bool: return scores[a] > scores[b])
+	var ranking: Array[int] = player_names.keys()
+	for user_id: int in scores:
+		if not ranking.has(user_id):
+			ranking.append(user_id)
+	ranking.sort_custom(func(a: int, b: int) -> bool: return get_score(a) > get_score(b))
 	return ranking
+
+func get_player_name(user_id: int) -> String:
+	return player_names.get(user_id, "")
 
 # --- Synchronization ---------------------------------------------------------------------
 
-## Applies a change on the host, then on every player whose game scene is loaded.
+## Applies a change on the host, then on every player that already has the whole state.
 func _send(method: Callable, arguments: Array) -> void:
 	method.callv(arguments)
-	if _lobby == null:
-		return
-	for peer_id: int in _lobby.scene_ready_peers:
-		if peer_id != multiplayer.get_unique_id():
-			method.rpc_id.callv([peer_id] + arguments)
+	for peer_id: int in _synced_peers:
+		method.rpc_id.callv([peer_id] + arguments)
 
+## A player has the game scene: it is known by name from now on, and receives the whole
+## state before any further change.
 func _on_member_scene_ready(member: LobbyMember) -> void:
-	if member.peer_id != multiplayer.get_unique_id():
-		_snapshot.rpc_id(member.peer_id, phase, time_left if _has_timer else 0.0, scores, _values)
+	if player_names.get(member.user_id) != member.name:
+		_send(_set_player_name, [member.user_id, member.name])
+	if member.peer_id != multiplayer.get_unique_id() and not _synced_peers.has(member.peer_id):
+		_snapshot.rpc_id(
+			member.peer_id, phase, time_left if _has_timer else 0.0, scores, player_names, _values
+		)
+		_synced_peers.append(member.peer_id)
+
+func _on_member_left(member: LobbyMember) -> void:
+	_synced_peers.erase(member.peer_id)
 
 @rpc("authority", "call_remote", "reliable")
 func _snapshot(
 	current_phase: StringName, current_time_left: float, current_scores: Dictionary,
-	current_values: Dictionary
+	current_names: Dictionary, current_values: Dictionary
 ) -> void:
+	player_names.clear()
+	for user_id: Variant in current_names:
+		if user_id is int and current_names[user_id] is String:
+			player_names[user_id] = current_names[user_id]
 	scores.clear()
 	for user_id: Variant in current_scores:
 		if user_id is int and current_scores[user_id] is int:
@@ -128,6 +153,10 @@ func _set_phase(new_phase: StringName, duration: float) -> void:
 func _set_score(user_id: int, score: int) -> void:
 	scores[user_id] = score
 	score_changed.emit(user_id, score)
+
+@rpc("authority", "call_remote", "reliable")
+func _set_player_name(user_id: int, player_name: String) -> void:
+	player_names[user_id] = player_name
 
 @rpc("authority", "call_remote", "reliable")
 func _set_value(key: String, value: Variant) -> void:

@@ -74,8 +74,46 @@ func test_player_joining_in_progress_receives_the_whole_state() -> void:
 	late.loader.complete()
 	await until(func() -> bool: return scene_of(late) != null and _state(late).phase == MatchState.PHASE_PLAYING, "late player has the phase")
 	assert_eq(_state(late).get_score(77), 6)
+	assert_eq(_state(late).get_player_name(host.service.local_member.user_id), host.service.local_member.name)
+	assert_eq(
+		_state(host).get_player_name(late.service.local_member.user_id), late.service.local_member.name,
+		"the late player is known by name"
+	)
 	assert_eq(_state(late).get_value("map"), "forest")
 	assert_between(_state(late).time_left, 15.0, 20.0)
 	_state(host).set_score(77, 7)
 	await until(func() -> bool: return _state(late).get_score(77) == 7, "later changes keep coming")
 	assert_engine_error_count(0)
+
+func test_state_set_when_the_game_starts_arrives_once() -> void:
+	var host: LobbyTestPeer = await add_host()
+	var client: LobbyTestPeer = await add_client()
+	# As a game does: the host starts the first phase the moment everyone is in.
+	host.service.game_started.connect(
+		func() -> void: scene_of(host).match_state.start_phase(MatchState.PHASE_COUNTDOWN, 3.0)
+	)
+	var phases_seen: Array[StringName] = []
+	client.loader.changed.connect(
+		func(_path: String) -> void:
+			if scene_of(client) != null:
+				scene_of(client).match_state.phase_changed.connect(phases_seen.append)
+	)
+	await start_game(host)
+	await until(func() -> bool: return _state(client).phase == MatchState.PHASE_COUNTDOWN, "client has the phase")
+	await wait_seconds(0.2)
+	assert_eq(phases_seen.size(), 1, "the phase is announced once, not twice")
+
+func test_players_who_left_keep_their_name_and_score() -> void:
+	var host: LobbyTestPeer = await add_host()
+	var client: LobbyTestPeer = await add_client()
+	var other: LobbyTestPeer = await add_client()
+	await start_game(host)
+	var client_user_id: int = client.service.local_member.user_id
+	var client_name: String = client.service.local_member.name
+	_state(host).add_score(client_user_id, 4)
+	await until(func() -> bool: return _state(other).get_score(client_user_id) == 4, "score is known")
+	client.service.leave()
+	await until(func() -> bool: return other.service.members.size() == 2, "the client is gone")
+	assert_eq(_state(other).get_player_name(client_user_id), client_name)
+	assert_eq(_state(other).get_score(client_user_id), 4)
+	assert_true(_state(other).get_ranking().has(client_user_id))
