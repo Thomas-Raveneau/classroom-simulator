@@ -8,6 +8,7 @@ var spawner: NetworkSpawner
 var pawns: Node
 var beacon: LobbyTestBeacon
 var match_state: MatchState
+var actions: HostActions
 var pawn_scene: PackedScene
 var _lobby: LobbyService
 
@@ -21,6 +22,9 @@ func _init() -> void:
 	match_state = MatchState.new()
 	match_state.name = "MatchState"
 	add_child(match_state)
+	actions = HostActions.new()
+	actions.name = "HostActions"
+	add_child(actions)
 	pawn_scene = PackedScene.new()
 	var pawn: LobbyTestPawn = LobbyTestPawn.new()
 	pawn_scene.pack(pawn)
