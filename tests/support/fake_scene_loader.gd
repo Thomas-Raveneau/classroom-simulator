@@ -1,4 +1,4 @@
-class_name FakeSceneLoader
+class_name FakeLobbySceneLoader
 extends LobbySceneLoader
 ## Scene loader that loads no file. By default a scene is "shown" on the next frame;
 ## with `manual` the test decides when with `complete()` or `fail()`.

@@ -6,7 +6,7 @@ extends Node
 
 var service: LobbyService
 var backend: ENetLobbyBackend
-var loader: FakeSceneLoader
+var loader: FakeLobbySceneLoader
 
 ## Adds a new player under `parent`. Every player of a test must share `port`.
 static func create(parent: Node, config: LobbyConfig, port: int) -> LobbyTestPeer:
@@ -14,7 +14,7 @@ static func create(parent: Node, config: LobbyConfig, port: int) -> LobbyTestPee
 	parent.add_child(test_peer)
 	# The multiplayer API must be in place before the nodes using it enter the tree.
 	parent.get_tree().set_multiplayer(SceneMultiplayer.new(), test_peer.get_path())
-	test_peer.loader = FakeSceneLoader.new()
+	test_peer.loader = FakeLobbySceneLoader.new()
 	test_peer.add_child(test_peer.loader)
 	test_peer.backend = ENetLobbyBackend.new()
 	test_peer.backend.port = port

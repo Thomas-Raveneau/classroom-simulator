@@ -1,6 +1,6 @@
 extends GutTest
 ## Real MultiplayerSpawner / MultiplayerSynchronizer replication between players of the
-## same process, to validate that LobbySpawnGate makes joining in progress safe.
+## same process, to validate that ReplicationGate makes joining in progress safe.
 
 const GAME_SCENE: String = "res://game.tscn"
 const LOBBY_SCENE: String = "res://lobby.tscn"
@@ -29,7 +29,7 @@ func after_each() -> void:
 func _add_peer() -> LobbyTestPeer:
 	var test_peer: LobbyTestPeer = LobbyTestPeer.create(self, _config, _port)
 	test_peer.loader.scene_factory = func(path: String) -> Node:
-		return TestGameScene.new() if path == GAME_SCENE else Node.new()
+		return LobbyTestGameScene.new() if path == GAME_SCENE else Node.new()
 	_peers.append(test_peer)
 	return test_peer
 
@@ -45,8 +45,8 @@ func _add_client() -> LobbyTestPeer:
 	await wait_until(func() -> bool: return client.service.state != LobbyTypes.State.JOINING, WAIT)
 	return client
 
-func _scene(test_peer: LobbyTestPeer) -> TestGameScene:
-	return test_peer.loader.current_scene as TestGameScene
+func _scene(test_peer: LobbyTestPeer) -> LobbyTestGameScene:
+	return test_peer.loader.current_scene as LobbyTestGameScene
 
 func _pawn_count(test_peer: LobbyTestPeer) -> int:
 	return _scene(test_peer).pawns.get_child_count() if _scene(test_peer) != null else 0
@@ -57,7 +57,7 @@ func _until(condition: Callable, text: String) -> void:
 
 func _pawn_value_is(viewer: LobbyTestPeer, owner_peer: LobbyTestPeer, value: int) -> Callable:
 	return func() -> bool:
-		var pawn: TestPawn = _scene(viewer).get_pawn(owner_peer.service.local_member.peer_id)
+		var pawn: LobbyTestPawn = _scene(viewer).get_pawn(owner_peer.service.local_member.peer_id)
 		return pawn != null and pawn.value == value
 
 func _set_own_pawn_value(test_peer: LobbyTestPeer, value: int) -> void:
@@ -132,9 +132,9 @@ func test_pawn_of_a_leaving_player_is_removed_everywhere() -> void:
 func _keep_pawns_moving(test_peers: Array[LobbyTestPeer], frames: int) -> void:
 	for frame: int in frames:
 		for test_peer: LobbyTestPeer in test_peers:
-			var scene: TestGameScene = _scene(test_peer)
+			var scene: LobbyTestGameScene = _scene(test_peer)
 			if scene != null and test_peer.service.local_member != null:
-				var pawn: TestPawn = scene.get_pawn(test_peer.service.local_member.peer_id)
+				var pawn: LobbyTestPawn = scene.get_pawn(test_peer.service.local_member.peer_id)
 				if pawn != null:
 					pawn.value += 1
 		await wait_process_frames(1)

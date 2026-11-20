@@ -7,7 +7,7 @@ const WAIT: float = 2.0
 
 var _config: LobbyConfig
 var _backend: FakeLobbyBackend
-var _loader: FakeSceneLoader
+var _loader: FakeLobbySceneLoader
 var _service: LobbyService
 ## The service lives in its own branch with its own multiplayer API, apart from the
 ## `Lobby` autoload of the project.
@@ -22,7 +22,7 @@ func before_each() -> void:
 	add_child(_branch)
 	get_tree().set_multiplayer(SceneMultiplayer.new(), _branch.get_path())
 	_backend = FakeLobbyBackend.new()
-	_loader = FakeSceneLoader.new()
+	_loader = FakeLobbySceneLoader.new()
 	_branch.add_child(_loader)
 	_service = LobbyService.new()
 	_service.setup(_config, _backend, _loader)

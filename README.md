@@ -1,11 +1,17 @@
 # classroom-simulator
 
-Projet Godot 4.7 qui sert de base à un template de lobby Steam.
+Le début d'un jeu multijoueur Godot 4.7 : un lobby Steam complet et une première partie jouable à plusieurs, à remplacer au fur et à mesure par le vrai jeu.
 
-- [`addons/steam_lobby/`](addons/steam_lobby/) : le kit de lobby, autonome. Sa [documentation](addons/steam_lobby/README.md) explique comment l'utiliser dans un nouveau jeu.
-- [`example/`](example/) : un jeu minimal qui s'en sert (une map, un personnage par joueur, un retour au lobby).
-- [`tests/`](tests/) : tests automatiques du kit.
-- `lobby_config.tres` : les réglages du lobby pour ce projet.
+## Organisation
+
+| Dossier | Contenu |
+|---|---|
+| `network/` | Le code réseau : le lobby (`lobby/`) et les briques réseau de la partie (`gameplay/`). Voir [network/README.md](network/README.md). |
+| `scenes/` | Les scènes du jeu et leurs scripts : menus (`UI/`), personnage, spawn et HUD (`gameplay/`), maps (`maps/`), chargement des scènes (`managers/`). |
+| `config/` | Les réglages, dont `lobby_config.tres`. |
+| `assets/` | Textures et icônes. |
+| `tests/` | Tests automatiques. |
+| `addons/` | Addons tiers : GodotSteam et GUT (tests). |
 
 ## Lancer le projet
 
@@ -20,21 +26,10 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 tests/e2e/run.sh
 ```
 
-## Créer le repo template
+## Démarrer un nouveau jeu à partir de ce repo
 
-À copier tel quel :
+1. Copier le repo, sauf `export_presets.cfg` (chemins propres à ce projet) et `license.txt` (la licence de GodotSteam, déjà présente dans `addons/godotsteam/`).
+2. Dans `project.godot`, changer le nom du projet (`config/name`).
+3. Dans `config/lobby_config.tres`, changer `game_key` et `steam_app_id`.
 
-- `addons/steam_lobby/`, `addons/godotsteam/`, `addons/gut/`
-- `example/`, `tests/`, `.gutconfig.json`
-- `lobby_config.tres`, `project.godot`, `icon.svg`
-- `.gitignore`, `.gitattributes`, `.editorconfig`
-
-À adapter après la copie :
-
-- `project.godot` : le nom du projet (`config/name`) ;
-- `lobby_config.tres` : `game_key` et `steam_app_id` ;
-- ce `README.md`.
-
-À ne pas copier : `export_presets.cfg` (chemins propres à ce projet) et `license.txt` (la licence de GodotSteam, déjà présente dans `addons/godotsteam/`).
-
-Avant de déclarer le template validé, dérouler la liste « À vérifier sur Steam » de la documentation du kit : le backend Steam n'a pas encore été testé en conditions réelles.
+Le backend Steam n'a pas encore été testé en conditions réelles : dérouler la liste « À vérifier sur Steam » de [network/README.md](network/README.md) avec deux comptes.
