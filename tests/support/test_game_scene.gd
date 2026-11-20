@@ -39,15 +39,9 @@ func _ready() -> void:
 	_lobby = LobbyService.for_node(self)
 	if multiplayer.is_server():
 		_lobby.member_scene_ready.connect(_on_member_scene_ready)
-		_lobby.member_left.connect(_on_member_left)
 
 func get_pawn(peer_id: int) -> LobbyTestPawn:
 	return pawns.get_node_or_null(str(peer_id)) as LobbyTestPawn
 
 func _on_member_scene_ready(member: LobbyMember) -> void:
 	spawner.spawn_scene(pawn_scene, {}, member.peer_id, str(member.peer_id))
-
-func _on_member_left(member: LobbyMember) -> void:
-	var pawn: LobbyTestPawn = get_pawn(member.peer_id)
-	if pawn != null:
-		pawn.queue_free()

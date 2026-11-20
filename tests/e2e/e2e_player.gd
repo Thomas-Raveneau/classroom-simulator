@@ -97,6 +97,10 @@ func _play_game() -> void:
 			"sees %s at its place" % player_name
 		)
 	await get_tree().create_timer(1.0).timeout
+	# Falling off the map: the host puts the character back on a spawn point.
+	own_player.position.y = -50.0
+	await _until(func() -> bool: return own_player.position.y > -5.0, "respawned after falling")
+	await get_tree().create_timer(0.5).timeout
 
 func _players() -> Array[Node]:
 	var container: Node = get_tree().current_scene.get_node_or_null("Players") if get_tree().current_scene else null

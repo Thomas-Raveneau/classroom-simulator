@@ -30,6 +30,16 @@ var _relayed: Dictionary[StringName, bool] = {}
 var _last_granted: Dictionary[Array, float] = {}
 var _lobby: LobbyService
 
+## The HostActions of the game scene `node` belongs to, null when there is none.
+static func find_for(node: Node) -> HostActions:
+	var ancestor: Node = node.get_parent()
+	while ancestor != null:
+		for child: Node in ancestor.get_children():
+			if child is HostActions:
+				return child
+		ancestor = ancestor.get_parent()
+	return null
+
 func _ready() -> void:
 	_lobby = LobbyService.for_node(self)
 
@@ -50,7 +60,8 @@ func register(
 
 ## Asks the host to perform an action for the local player.
 func request(action: StringName, arguments: Array = []) -> void:
-	if _lobby == null or _lobby.local_member == null:
+	# Nothing is asked once the game scene is being left: the host may not have it anymore.
+	if _lobby == null or not _lobby.is_member_scene_ready(_lobby.local_member):
 		return
 	if multiplayer.is_server():
 		_handle(_lobby.local_member, action, arguments)

@@ -156,6 +156,18 @@ func test_object_of_the_scene_reaches_a_player_joining_in_progress() -> void:
 	await _until(func() -> bool: return _scene(late).beacon.value == 3 and _scene(client).beacon.value == 3, "updates keep flowing")
 	assert_engine_error_count(0)
 
+func test_object_owned_by_a_leaving_player_is_removed() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	host.service.start_game()
+	await _until(func() -> bool: return _pawn_count(client) == 2, "client has both pawns")
+	var scene: LobbyTestGameScene = _scene(host)
+	scene.spawner.spawn_scene(scene.pawn_scene, {}, client.service.local_member.peer_id, "Owned")
+	scene.spawner.spawn_scene(scene.pawn_scene, {}, 1, "Kept")
+	client.service.leave()
+	await _until(func() -> bool: return not scene.pawns.has_node("Owned"), "what the client owned is freed")
+	assert_true(scene.pawns.has_node("Kept"), "what the host owns stays")
+
 func test_pawn_of_a_leaving_player_is_removed_everywhere() -> void:
 	var host: LobbyTestPeer = await _add_host()
 	var client: LobbyTestPeer = await _add_client()

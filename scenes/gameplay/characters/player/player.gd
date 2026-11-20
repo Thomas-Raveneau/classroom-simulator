@@ -1,15 +1,23 @@
 class_name Player
 extends CharacterBody3D
-## The character of a player, moved by the player who has authority over it and synchronized to
-## the others by the MultiplayerSynchronizer of the scene.
+## The character of a player, moved by the player who has authority over it and shown to
+## the others through the NetworkSmoother of the scene.
 
 const SPEED: float = 15.0
 const JUMP_VELOCITY: float = 4.5
 const ROTATION_SPEED: float = 20.0
+## Time between two requests to respawn while the character keeps falling, in seconds.
+const RESPAWN_RETRY_DELAY: float = 1.5
+
+## Height under which the character fell off the map and asks to respawn.
+@export var fall_limit: float = -10.0
+
+var _respawn_asked_at: float = -INF
 
 @onready var _meshes: Node3D = $Meshes
 @onready var _camera: Camera3D = $Camera
 @onready var _name_label: Label3D = $NameLabel
+@onready var _smoother: NetworkSmoother = $NetworkSmoother
 
 func _ready() -> void:
 	_camera.current = is_multiplayer_authority()
@@ -27,6 +35,26 @@ func _physics_process(delta: float) -> void:
 		return
 	_move(delta)
 	_face_movement(delta)
+	_respawn_when_fallen()
+
+## Host only. Moves the character somewhere else at once, whoever controls it: the
+## position belongs to its player, so the host asks that player to move it.
+func teleport_to(target: Vector3) -> void:
+	if is_multiplayer_authority():
+		_teleport(target)
+	else:
+		_teleport.rpc_id(get_multiplayer_authority(), target)
+
+@rpc("any_peer", "call_remote", "reliable")
+func _teleport(target: Vector3) -> void:
+	# Called locally (sender 0) or by the host, never by another player.
+	var sender_id: int = multiplayer.get_remote_sender_id()
+	if sender_id != 0 and sender_id != MultiplayerPeer.TARGET_PEER_SERVER:
+		return
+	position = target
+	velocity = Vector3.ZERO
+	_respawn_asked_at = -INF
+	_smoother.teleport()
 
 func _move(delta: float) -> void:
 	if not is_on_floor():
@@ -46,3 +74,13 @@ func _face_movement(delta: float) -> void:
 		return
 	var angle: float = wrapf(atan2(velocity.x, velocity.z) - _meshes.rotation.y, -PI, PI)
 	_meshes.rotation.y += clampf(ROTATION_SPEED * delta, 0, absf(angle)) * signf(angle)
+
+## Where the character respawns is decided by the host: it is asked through HostActions.
+func _respawn_when_fallen() -> void:
+	var now: float = Time.get_ticks_msec() / 1000.0
+	if position.y >= fall_limit or now - _respawn_asked_at < RESPAWN_RETRY_DELAY:
+		return
+	_respawn_asked_at = now
+	var actions: HostActions = HostActions.find_for(self)
+	if actions != null:
+		actions.request(PlayerSpawner.RESPAWN_ACTION)

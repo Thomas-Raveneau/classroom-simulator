@@ -15,6 +15,17 @@ extends MultiplayerSpawner
 func _init() -> void:
 	spawn_function = _create_object
 
+func _ready() -> void:
+	var lobby: LobbyService = LobbyService.for_node(self)
+	if lobby != null and multiplayer.is_server():
+		lobby.member_left.connect(_on_member_left)
+
+## What a player owned does not outlive it: nobody would control it anymore.
+func _on_member_left(member: LobbyMember) -> void:
+	for node: Node in get_node(spawn_path).get_children():
+		if node.get_multiplayer_authority() == member.peer_id:
+			node.queue_free()
+
 ## Host only. Spawns `scene` on every player and returns the node created on the host.
 ## - `properties`: values set on the node before it enters the tree (e.g. `position`).
 ##   Only use types that can be sent over the network, no objects.

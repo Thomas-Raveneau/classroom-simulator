@@ -54,3 +54,17 @@ func test_remote_rotation_follows_on_its_own_node() -> void:
 	await wait_until(func() -> bool: return absf(visual.rotation.y - PI / 2) < 0.01, 2.0)
 	assert_almost_eq(visual.rotation.y, PI / 2, 0.01)
 	assert_eq(_object.rotation, Vector3.ZERO, "the body does not rotate")
+
+func test_remote_object_jumps_after_a_teleport_of_the_owner_even_nearby() -> void:
+	_add_object(false)
+	_smoother.sync_position = Vector3(1, 0, 0)
+	_smoother.sync_teleport_count += 1
+	await wait_process_frames(1)
+	assert_eq(_object.position, Vector3(1, 0, 0))
+
+func test_owner_teleport_is_published() -> void:
+	_add_object(true)
+	_object.position = Vector3(3, 0, 0)
+	_smoother.teleport()
+	assert_eq(_smoother.sync_position, Vector3(3, 0, 0))
+	assert_eq(_smoother.sync_teleport_count, 1)
