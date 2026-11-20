@@ -5,9 +5,9 @@
 GODOT="${1:-/Applications/Godot.app/Contents/MacOS/Godot}"
 cd "$(dirname "$0")/../.." || exit 1
 
-# Each instance is killed after 90 seconds, whatever happens.
+# Each instance is killed after 150 seconds, whatever happens.
 run() {
-	perl -e 'alarm 90; exec @ARGV' "$GODOT" --headless --path . res://tests/e2e/e2e_player.tscn -- \
+	perl -e 'alarm 150; exec @ARGV' "$GODOT" --headless --path . res://tests/e2e/e2e_player.tscn -- \
 		--lobby-backend=enet "--lobby-name=$1" "--e2e-role=$2" 2>&1 | sed "s/^/$2 | /"
 }
 

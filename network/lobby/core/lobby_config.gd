@@ -39,9 +39,10 @@ const MENUS_DIR: String = "res://scenes/UI/menus/"
 ## Time left to a removed player to leave by itself before its connection is cut.
 @export_range(0.1, 10.0) var dismiss_grace: float = 2.0
 ## A player (or the host) that does not answer for this long is considered disconnected.
-## 0 leaves it to the transport, which can take 30 seconds. Note that pausing an instance
-## in the debugger longer than this drops it from the lobby.
-@export_range(0.0, 60.0) var connection_timeout: float = 10.0
+## 0 leaves it to the transport, which can take 30 seconds. Keep it above the longest
+## freeze a machine can have (first load of a heavy scene): a frozen instance, or one
+## paused in the debugger, is dropped after this time. It can then rejoin.
+@export_range(0.0, 60.0) var connection_timeout: float = 15.0
 
 @export_group("Backend")
 ## "steam" or "enet". Overridden by the command line argument `--lobby-backend=<name>`.

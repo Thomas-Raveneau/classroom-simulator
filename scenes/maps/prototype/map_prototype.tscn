@@ -3,6 +3,10 @@
 [ext_resource type="MeshLibrary" uid="uid://bdsrytkfmcwbg" path="res://scenes/maps/prototype/mesh_library/prototype_mesh_library.tres" id="1_ouhv6"]
 [ext_resource type="PackedScene" path="res://scenes/gameplay/hud/game_hud.tscn" id="1_hud"]
 [ext_resource type="Script" path="res://network/gameplay/host_actions.gd" id="3_actions"]
+[ext_resource type="Script" path="res://network/gameplay/match_state.gd" id="5_state"]
+[ext_resource type="Script" path="res://network/gameplay/network_spawner.gd" id="6_spawner"]
+[ext_resource type="Script" path="res://scenes/gameplay/game/round/collect_round.gd" id="7_round"]
+[ext_resource type="PackedScene" path="res://scenes/gameplay/game/round/coin.tscn" id="8_coin"]
 [ext_resource type="Script" uid="uid://rwytyooav0q2" path="res://scenes/gameplay/game/spawn/player_spawner.gd" id="2_blwkt"]
 [ext_resource type="PackedScene" uid="uid://sh07mxo33ehw" path="res://scenes/gameplay/characters/player/player.tscn" id="2_q7rny"]
 [ext_resource type="PackedScene" uid="uid://dbgu66plcb5y" path="res://scenes/gameplay/game/spawn/spawn_point.tscn" id="4_o3rh0"]
@@ -26,7 +30,26 @@ glow_enabled = true
 
 [node name="MapPrototype" type="Node3D"]
 
-[node name="GameHud" parent="." instance=ExtResource("1_hud")]
+[node name="GameHud" parent="." node_paths=PackedStringArray("match_state") instance=ExtResource("1_hud")]
+match_state = NodePath("../MatchState")
+
+[node name="MatchState" type="Node" parent="."]
+script = ExtResource("5_state")
+
+[node name="CollectRound" type="Node" parent="." node_paths=PackedStringArray("match_state", "actions", "coin_spawner", "player_spawner")]
+script = ExtResource("7_round")
+match_state = NodePath("../MatchState")
+actions = NodePath("../HostActions")
+coin_spawner = NodePath("../CoinSpawner")
+player_spawner = NodePath("../PlayerSpawner")
+coin_scene = ExtResource("8_coin")
+
+[node name="CoinSpawner" type="MultiplayerSpawner" parent="."]
+spawn_path = NodePath("../Coins")
+script = ExtResource("6_spawner")
+scenes = Array[PackedScene]([ExtResource("8_coin")])
+
+[node name="Coins" type="Node3D" parent="."]
 
 [node name="HostActions" type="Node" parent="."]
 script = ExtResource("3_actions")
