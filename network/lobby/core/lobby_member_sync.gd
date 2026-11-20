@@ -31,6 +31,9 @@ var lobby_data: Dictionary[String, Variant] = {}
 var admission_check: Callable
 ## Host: optional validation of member data, `func(member: LobbyMember, key: String, value: Variant) -> bool`.
 var data_validator: Callable
+## Keys of member data only the host may write: a request of a member for one of them is
+## ignored. Add the keys the game decides for the players (team, role...).
+var host_only_keys: Array[String] = [LobbyMember.PING_KEY]
 
 var _config: LobbyConfig
 var _backend: LobbyBackend
@@ -86,6 +89,11 @@ func set_member_data(key: String, value: Variant, member: LobbyMember = null) ->
 		_host_set_member_data(target, key, value)
 	elif target == local_member:
 		_request_member_data.rpc_id(MultiplayerPeer.TARGET_PEER_SERVER, key, value)
+
+## Host only. Writes data decided by the lobby itself, without asking the game validator.
+func set_member_data_as_host(member: LobbyMember, key: String, value: Variant) -> void:
+	if is_host():
+		_host_set_member_data(member, key, value, false)
 
 ## Host only. A null value erases the key.
 func set_lobby_data(key: String, value: Variant) -> void:
@@ -263,13 +271,15 @@ func _request_member_data(key: String, value: Variant) -> void:
 		return
 	var peer_id: int = multiplayer.get_remote_sender_id()
 	var member: LobbyMember = get_member(peer_id)
-	if member != null and not _dismissed_peers.has(peer_id):
+	if member != null and not _dismissed_peers.has(peer_id) and not host_only_keys.has(key):
 		_host_set_member_data(member, key, value)
 
-func _host_set_member_data(member: LobbyMember, key: String, value: Variant) -> void:
+func _host_set_member_data(
+	member: LobbyMember, key: String, value: Variant, ask_validator: bool = true
+) -> void:
 	if not members.has(member.peer_id) or not _is_valid_entry(key, value):
 		return
-	if data_validator.is_valid() and data_validator.call(member, key, value) != true:
+	if ask_validator and data_validator.is_valid() and data_validator.call(member, key, value) != true:
 		return
 	_apply_member_data(member.peer_id, key, value)
 	for peer_id: int in _remote_peers():

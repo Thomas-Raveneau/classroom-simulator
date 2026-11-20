@@ -4,6 +4,7 @@ extends HBoxContainer
 @onready var _host_icon: TextureRect = %HostIcon
 @onready var _name_label: Label = %NameLabel
 @onready var _ready_label: Label = %ReadyLabel
+@onready var _ping_label: Label = %PingLabel
 @onready var _kick_button: Button = %KickButton
 
 var _lobby: LobbyService
@@ -17,8 +18,14 @@ func _ready() -> void:
 	_name_label.text = _member.name
 	# Kept in the layout when hidden, so names stay aligned.
 	_host_icon.modulate.a = 1.0 if _member.is_host else 0.0
-	_ready_label.visible = _member.is_ready and not _member.is_host
 	_kick_button.visible = _lobby.is_host() and _member != _lobby.local_member
+	refresh()
+
+## Shows what can change while the member is in the lobby.
+func refresh() -> void:
+	_ready_label.visible = _member.is_ready and not _member.is_host
+	_ping_label.visible = _member.ping >= 0 and not _member.is_host
+	_ping_label.text = "%d ms" % _member.ping
 
 func _on_kick_button_pressed() -> void:
 	_lobby.kick(_member)

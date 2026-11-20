@@ -21,6 +21,7 @@ const VISIBILITY_LABELS: Dictionary[LobbyTypes.Visibility, String] = {
 @onready var _visibility_option: OptionButton = %VisibilityOption
 
 var _lobby: LobbyService
+var _rows: Dictionary[int, LobbyMemberRow] = {}
 
 func _ready() -> void:
 	_lobby = LobbyService.for_node(self)
@@ -28,7 +29,7 @@ func _ready() -> void:
 		return
 	_lobby.member_joined.connect(_refresh.unbind(1))
 	_lobby.member_left.connect(_refresh.unbind(1))
-	_lobby.member_updated.connect(_refresh.unbind(2))
+	_lobby.member_updated.connect(_on_member_updated)
 	# The screen can show while the others are still coming back from a game.
 	_lobby.state_changed.connect(_refresh.unbind(1))
 	_lobby.friends_changed.connect(_refresh_friends)
@@ -57,12 +58,21 @@ func _refresh() -> void:
 	_members_header.text = "Players (%d/%d)" % [_lobby.members.size(), _lobby.config.max_players]
 	for child: Node in _members.get_children():
 		child.queue_free()
+	_rows.clear()
 	for member: LobbyMember in _lobby.get_members():
 		var row: LobbyMemberRow = MEMBER_ROW_SCENE.instantiate() as LobbyMemberRow
 		row.setup(_lobby, member)
 		_members.add_child(row)
+		_rows[member.peer_id] = row
 	_start_button.disabled = not _lobby.can_start_game()
 	_refresh_friends()
+
+## A piece of data changed (ready, latency...): the row is updated in place, so the
+## buttons of the list are not rebuilt under the mouse.
+func _on_member_updated(member: LobbyMember, _key: String) -> void:
+	if _rows.has(member.peer_id):
+		_rows[member.peer_id].refresh()
+	_start_button.disabled = not _lobby.can_start_game()
 
 func _refresh_friends() -> void:
 	for child: Node in _friends.get_children():

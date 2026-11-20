@@ -3,6 +3,7 @@ extends RefCounted
 ## A player admitted in the lobby.
 
 const READY_KEY: String = "ready"
+const PING_KEY: String = "ping"
 
 ## Network peer id (1 for the host).
 var peer_id: int = 0
@@ -17,6 +18,12 @@ var is_host: bool:
 
 var is_ready: bool:
 	get: return data.get(READY_KEY, false) == true
+
+## Round trip between the host and this member in milliseconds, -1 when not measured yet.
+var ping: int:
+	get:
+		var value: Variant = data.get(PING_KEY)
+		return value if value is int else -1
 
 func _init(_peer_id: int = 0, _user_id: int = 0, _name: String = "") -> void:
 	peer_id = _peer_id

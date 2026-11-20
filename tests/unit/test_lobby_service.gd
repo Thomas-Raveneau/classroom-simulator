@@ -159,7 +159,9 @@ func test_oversized_or_object_member_data_is_refused() -> void:
 	_service.set_member_data("big", "x".repeat(LobbyMemberSync.MAX_VALUE_BYTES + 1))
 	_service.set_member_data("object", RefCounted.new())
 	_service.set_member_data("", 1)
-	assert_eq(_service.local_member.data.size(), 0)
+	assert_false(_service.local_member.data.has("big"))
+	assert_false(_service.local_member.data.has("object"))
+	assert_false(_service.local_member.data.has(""))
 
 func test_lobby_data_is_set_by_the_host() -> void:
 	await _create_lobby()

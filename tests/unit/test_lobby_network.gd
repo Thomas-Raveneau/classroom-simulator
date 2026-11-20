@@ -360,3 +360,33 @@ func test_kicked_player_ignoring_the_notice_is_disconnected() -> void:
 	client.service.set_member_data("team", 1)
 	await _until(_state_is(client, LobbyTypes.State.NONE), "stubborn client is disconnected")
 	assert_eq(host.service.members.size(), 1)
+
+func test_latency_of_each_member_is_published() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	var other: LobbyTestPeer = await _add_client()
+	var client_peer_id: int = client.service.local_member.peer_id
+	assert_eq(client.service.local_member.ping, -1, "unknown before the first measure")
+	await _until(
+		func() -> bool: return other.service.get_member(client_peer_id).ping >= 0,
+		"another client knows the latency of the client"
+	)
+	assert_lt(host.service.get_member(client_peer_id).ping, 200)
+	assert_eq(other.service.get_member(1).ping, 0, "the host has none")
+
+func test_member_cannot_write_a_host_only_key() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var client: LobbyTestPeer = await _add_client()
+	host.service.host_only_member_keys.append("team")
+	client.service.set_member_data("team", 3)
+	client.service.set_member_data(LobbyMember.PING_KEY, -500)
+	client.service.set_member_data("color", "red")
+	var client_peer_id: int = client.service.local_member.peer_id
+	await _until(
+		func() -> bool: return host.service.get_member(client_peer_id).data.get("color") == "red",
+		"an ordinary key is accepted"
+	)
+	assert_false(host.service.get_member(client_peer_id).data.has("team"))
+	assert_ne(host.service.get_member(client_peer_id).ping, -500)
+	host.service.set_member_data("team", 2, host.service.get_member(client_peer_id))
+	await _until(func() -> bool: return client.service.local_member.data.get("team") == 2, "the host can")

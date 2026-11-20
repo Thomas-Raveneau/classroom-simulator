@@ -70,6 +70,10 @@ var supports_invites: bool:
 	get: return backend.supports_invites
 var supports_invite_overlay: bool:
 	get: return backend.supports_invite_overlay
+## Keys of member data only the host may write (see `LobbyMemberSync.host_only_keys`).
+var host_only_member_keys: Array[String]:
+	get: return _member_sync.host_only_keys
+	set(value): _member_sync.host_only_keys = value
 ## Host: optional validation of member data,
 ## `func(member: LobbyMember, key: String, value: Variant) -> bool`.
 var member_data_validator: Callable:
@@ -78,6 +82,7 @@ var member_data_validator: Callable:
 
 var _member_sync: LobbyMemberSync
 var _scene_sync: LobbySceneSync
+var _ping: LobbyPing
 ## Incremented whenever a create / join attempt starts or ends: invalidates its timeout.
 var _attempt: int = 0
 
@@ -107,6 +112,10 @@ func setup(_config: LobbyConfig, _backend: LobbyBackend, _scene_loader: LobbySce
 	_scene_sync.name = "SceneSync"
 	_scene_sync.setup(config, _member_sync, scene_loader)
 	add_child(_scene_sync)
+	_ping = LobbyPing.new()
+	_ping.name = "Ping"
+	_ping.setup(_member_sync)
+	add_child(_ping)
 	_connect_signals()
 
 func _enter_tree() -> void:
