@@ -243,6 +243,11 @@ func is_member_scene_ready(member: LobbyMember) -> bool:
 func is_peer_scene_ready(peer_id: int) -> bool:
 	return _scene_sync.is_peer_ready(peer_id)
 
+## Peer ids of the members having the game scene loaded: the only ones that can be sent
+## anything about the game scene (RPC on its nodes, replicated objects).
+var scene_ready_peers: Array[int]:
+	get: return _scene_sync.get_ready_peers()
+
 # --- Friends, invites, lobby list --------------------------------------------------------
 
 func get_friends() -> Array[LobbyUser]:

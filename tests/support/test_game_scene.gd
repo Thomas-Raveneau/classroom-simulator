@@ -7,6 +7,7 @@ extends Node
 var spawner: NetworkSpawner
 var pawns: Node
 var beacon: LobbyTestBeacon
+var match_state: MatchState
 var pawn_scene: PackedScene
 var _lobby: LobbyService
 
@@ -17,6 +18,9 @@ func _init() -> void:
 	beacon = LobbyTestBeacon.new()
 	beacon.name = "Beacon"
 	add_child(beacon)
+	match_state = MatchState.new()
+	match_state.name = "MatchState"
+	add_child(match_state)
 	pawn_scene = PackedScene.new()
 	var pawn: LobbyTestPawn = LobbyTestPawn.new()
 	pawn_scene.pack(pawn)

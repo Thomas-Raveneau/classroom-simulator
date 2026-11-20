@@ -67,6 +67,11 @@ func setup(config: LobbyConfig, members: LobbyMemberSync, loader: LobbySceneLoad
 func is_peer_ready(peer_id: int) -> bool:
 	return not _is_paused and ready_peers.has(peer_id)
 
+## Peers the game scene can be replicated to. Empty while the scene is being left.
+func get_ready_peers() -> Array[int]:
+	var empty: Array[int] = []
+	return empty if _is_paused else ready_peers.duplicate()
+
 ## True from the moment the host ordered the game scene until it orders the lobby back.
 func is_game_active() -> bool:
 	return not scene_path.is_empty() and _target_state == LobbyTypes.State.IN_GAME
