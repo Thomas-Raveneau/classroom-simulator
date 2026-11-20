@@ -8,6 +8,7 @@ const TIMEOUT: float = 20.0
 ## Where each role moves its own character, to check that positions are synchronized.
 const TARGET_X: Dictionary[String, float] = { "host": 7.0, "client": -7.0, "late": 3.0 }
 const EXPECTED_PLAYERS: int = 3
+const SEEN_KEY: String = "e2e_seen"
 
 var _role: String = ""
 
@@ -96,7 +97,14 @@ func _play_game() -> void:
 				return player != null and absf(player.position.x - target_x) < 0.5,
 			"sees %s at its place" % player_name
 		)
-	await get_tree().create_timer(1.0).timeout
+	# Nobody moves again before everyone has checked the positions: the players tell
+	# each other through their member data.
+	Lobby.set_member_data(SEEN_KEY, true)
+	await _until(
+		func() -> bool:
+			return Lobby.get_members().all(func(member: LobbyMember) -> bool: return member.data.get(SEEN_KEY) == true),
+		"everyone has seen everyone"
+	)
 	# Falling off the map: the host puts the character back on a spawn point.
 	own_player.position.y = -50.0
 	await _until(func() -> bool: return own_player.position.y > -5.0, "respawned after falling")
@@ -126,11 +134,13 @@ func _until(condition: Callable, what: String) -> void:
 	var elapsed: float = 0.0
 	while not condition.call():
 		if elapsed > TIMEOUT:
+			for player: Node in _players():
+				_log("  %s is at %s" % [player.name, (player as Player).position])
 			_fail("timeout waiting for: %s" % what)
 			return
 		await get_tree().process_frame
 		elapsed += get_process_delta_time()
-	_log("ok: %s" % what)
+	_log("ok: %s (%.2fs)" % [what, elapsed])
 
 func _check(condition: bool, what: String) -> void:
 	if condition:
