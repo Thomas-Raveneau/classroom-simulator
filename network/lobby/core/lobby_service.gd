@@ -83,6 +83,8 @@ var member_data_validator: Callable:
 	get: return _member_sync.data_validator
 	set(value): _member_sync.data_validator = value
 
+## Voice chat between the members of the lobby.
+var voice: VoiceChat
 ## Debug: makes the connection of this player behave like a bad one (latency, jitter,
 ## packet loss). Set it before creating or joining a lobby; its values can be changed
 ## while connected. See SimulatedNetworkPeer.
@@ -106,8 +108,12 @@ static func for_node(node: Node) -> LobbyService:
 			return service
 	return null
 
-## Must be called once, before the service enters the tree.
-func setup(_config: LobbyConfig, _backend: LobbyBackend, _scene_loader: LobbySceneLoader) -> void:
+## Must be called once, before the service enters the tree. Without a `voice_source`,
+## there is no voice chat.
+func setup(
+	_config: LobbyConfig, _backend: LobbyBackend, _scene_loader: LobbySceneLoader,
+	voice_source: VoiceSource = null
+) -> void:
 	config = _config
 	backend = _backend
 	scene_loader = _scene_loader
@@ -130,6 +136,10 @@ func setup(_config: LobbyConfig, _backend: LobbyBackend, _scene_loader: LobbySce
 	_ping.setup(config, _member_sync)
 	_member_sync.seat_policy = _scene_sync.is_game_active
 	add_child(_ping)
+	voice = VoiceChat.new()
+	voice.name = "Voice"
+	voice.setup(config, _member_sync, voice_source)
+	add_child(voice)
 	_connect_signals()
 
 func _enter_tree() -> void:

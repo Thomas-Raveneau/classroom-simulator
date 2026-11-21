@@ -238,6 +238,41 @@ Limites : la vitesse de lecture et la lecture à l'envers ne sont pas transmises
 
 `PlayerSpawner` fait apparaître un personnage par joueur et gère la réapparition. Un personnage qui tombe sous `fall_limit` demande l'action `respawn` ; l'hôte choisit un point d'apparition et demande au propriétaire de s'y téléporter. Côté hôte, `player_spawner.respawn(peer_id)` fait la même chose à la demande du jeu.
 
+## Le chat vocal
+
+Les joueurs d'un lobby se parlent, dans le lobby comme en partie. Tout passe par `Lobby.voice` (`VoiceChat`), réglé dans `LobbyConfig` :
+
+| Réglage | Effet |
+|---|---|
+| `voice_enabled` | Active ou coupe le chat vocal pour tout le jeu. |
+| `voice_range` | `EVERYONE` : tout le monde s'entend au même volume. `PROXIMITY` : en partie, la voix sort du personnage et s'atténue avec la distance ; dans le lobby, tout le monde s'entend. |
+| `voice_activation` | Mode par défaut de chaque joueur : `PUSH_TO_TALK` (parler en maintenant l'action `voice_talk`, la touche V) ou `OPEN_MIC` (micro ouvert). |
+
+Chaque joueur règle ensuite son micro pour lui-même :
+
+```gdscript
+Lobby.voice.activation = LobbyTypes.VoiceActivation.OPEN_MIC
+Lobby.voice.is_microphone_muted = true            # ne plus être enregistré
+Lobby.voice.set_member_muted(member, true)        # ne plus entendre ce joueur
+Lobby.voice.is_speaking(member.peer_id)           # pour afficher qui parle
+Lobby.voice.speaking_changed.connect(...)         # (peer_id, is_speaking)
+```
+
+L'écran du lobby propose ces réglages (option « Mic », bouton « Mute » par joueur, mention « Talking »), et le tableau des scores colore le joueur qui parle. Les réglages d'un joueur ne sont pas enregistrés d'une session à l'autre.
+
+**Proximité.** Le personnage porte un nœud `VoiceEmitter3D` (un `AudioStreamPlayer3D`) : c'est de là que sort la voix de son joueur quand `voice_range` vaut `PROXIMITY`. La portée et l'atténuation se règlent sur ce nœud (`max_distance`, `unit_size`). La voix est tout de même envoyée à tous les joueurs : la distance ne joue que sur le volume.
+
+**D'où vient le son.** Une `VoiceSource` enregistre et compresse la voix ; elle est choisie selon le backend :
+
+| Backend | Source | Remarques |
+|---|---|---|
+| Steam | `steam_voice_source.gd` | Steam enregistre le micro choisi dans ses paramètres, compresse, et n'envoie rien pendant les silences. |
+| ENet | `microphone_voice_source.gd` | Micro de Godot, son non compressé (environ 32 ko/s par auditeur). Pour tester en local uniquement. Demande d'activer `Audio > Driver > Enable Input` dans les paramètres du projet, désactivé par défaut car le système demande alors l'accès au micro dès le lancement. |
+
+Sans micro utilisable, un joueur entend quand même les autres. Pour une autre technique (un codec Opus par exemple), hériter de `VoiceSource` et l'ajouter à `VOICE_SOURCE_SCRIPTS` dans `lobby_autoload.gd`.
+
+Limites : pas d'annulation d'écho ni de réduction de bruit en dehors de ce que fait Steam ; un paquet de voix perdu n'est pas renvoyé ; ce qui arrive d'un joueur est limité en taille et en débit, et n'est accepté que d'un membre du lobby.
+
 ## L'interface
 
 Les écrans du lobby sont dans `scenes/UI/menus/` (menu principal, liste des lobbies, lobby, invitations). Ils n'utilisent que l'API publique de `Lobby` : on peut les modifier ou les remplacer librement. Leurs chemins sont dans `LobbyConfig`.
@@ -250,7 +285,8 @@ Les écrans du lobby sont dans `scenes/UI/menus/` (menu principal, liste des lob
 interface, jeu  →  Lobby (LobbyService)  →  LobbyBackend (Steam ou ENet)
                        ├─ MemberSync : joueurs, données, exclusion, places réservées
                        ├─ SceneSync  : chargement synchronisé
-                       └─ Ping       : latence, détection des joueurs injoignables
+                       ├─ Ping       : latence, détection des joueurs injoignables
+                       └─ Voice      : chat vocal  →  VoiceSource (Steam ou micro)
 ```
 
 | Dossier | Contenu |
@@ -258,6 +294,7 @@ interface, jeu  →  Lobby (LobbyService)  →  LobbyBackend (Steam ou ENet)
 | `network/lobby/core/` | La façade, le registre des joueurs, le chargement synchronisé, la latence, la config, la classe de base des backends. |
 | `network/lobby/backends/` | Steam et ENet. Seul `backends/steam/` connaît Steam. |
 | `network/gameplay/` | Les briques de la partie. |
+| `network/voice/` | Le chat vocal. Seul `steam_voice_source.gd` connaît Steam. |
 | `network/debug/` | La simulation de mauvaise connexion. |
 | `scenes/managers/` | Le chargeur de scènes (`SceneLoader`, utilisable seul) et l'enchaînement des écrans. |
 | `scenes/UI/menus/` | Les écrans du lobby. |
@@ -296,11 +333,13 @@ Chaque joueur des tests reçoit alors cette connexion, et les tests attendent tr
 
 Dans ce mode, un test qui exige « aucune erreur moteur » peut échouer de temps en temps : une mise à jour arrivée après un changement de scène est signalée par le moteur (voir les limites connues). Un échec qui porte sur autre chose mérite d'être regardé.
 
+Le chat vocal est testé avec un faux micro : la capture réelle (Steam ou micro de Godot) ne peut pas l'être automatiquement.
+
 Pour ne pas embarquer les tests dans le jeu exporté, ajouter `tests/*, addons/gut/*` aux filtres d'exclusion des préréglages d'export.
 
 ## À vérifier sur Steam
 
-Le backend Steam a été écrit sans pouvoir être exécuté : il compile avec GodotSteam 4.24, mais **aucun parcours Steam n'a encore été testé**. À faire avec deux comptes, sur deux machines ou une machine et une VM :
+Le backend Steam a été écrit sans pouvoir être exécuté : il compile avec GodotSteam 4.24, mais **aucun parcours Steam n'a encore été testé**. Seule exception : la forme des réponses des fonctions vocales de Steam a été vérifiée, sans enregistrement. À faire avec deux comptes, sur deux machines ou une machine et une VM :
 
 - [ ] Créer un lobby, le voir chez un ami dans « Join lobby », le rejoindre.
 - [ ] Les noms des joueurs et leur latence s'affichent chez tout le monde.
@@ -315,6 +354,8 @@ Le backend Steam a été écrit sans pouvoir être exécuté : il compile avec G
 - [ ] Rejoindre une partie en cours, avec `allow_join_in_progress` activé puis désactivé.
 - [ ] Couper le réseau d'un client en pleine partie, puis « Rejoin game » : il retrouve son score.
 - [ ] Un client quitte volontairement en pleine partie : sa place n'est pas gardée chez l'hôte.
+- [ ] Chat vocal : se parler dans le lobby et en partie, en maintenant V puis en micro ouvert ; « Talking » s'affiche chez les autres.
+- [ ] Chat vocal : couper son micro, couper le son d'un joueur, et avec `voice_range = PROXIMITY`, la voix s'atténue en s'éloignant.
 
 Deux points propres à Steam à surveiller pendant ces essais :
 - Le message d'un départ volontaire part juste avant la fermeture de la connexion. S'il n'arrive pas, la place du joueur est gardée pendant `reconnect_grace` : sans gravité, mais à constater.

@@ -14,6 +14,12 @@ enum State {
 ## Who can see and join a lobby.
 enum Visibility { PRIVATE, FRIENDS_ONLY, PUBLIC }
 
+## Who hears the voice of a player (see VoiceChat).
+enum VoiceRange { EVERYONE, PROXIMITY }
+
+## How a player turns its microphone on.
+enum VoiceActivation { PUSH_TO_TALK, OPEN_MIC }
+
 ## Why a lobby was left, or why creating / joining one failed.
 enum Reason {
 	NONE,

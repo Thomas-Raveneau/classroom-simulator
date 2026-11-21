@@ -17,6 +17,13 @@ const BACKEND_SCRIPTS: Dictionary[String, String] = {
 	"enet": "res://network/lobby/backends/enet/enet_lobby_backend.gd",
 }
 
+## How the voice of the players is recorded with each backend, loaded by path for the
+## same reason.
+const VOICE_SOURCE_SCRIPTS: Dictionary[String, String] = {
+	"steam": "res://network/voice/steam_voice_source.gd",
+	"enet": "res://network/voice/microphone_voice_source.gd",
+}
+
 ## Engine class a backend cannot work without (provided by an extension).
 const BACKEND_REQUIRED_CLASSES: Dictionary[String, StringName] = {
 	"steam": &"SteamMultiplayerPeer",
@@ -28,7 +35,8 @@ var navigator: LobbyNavigator
 func _enter_tree() -> void:
 	super()
 	var loaded_config: LobbyConfig = _load_config()
-	setup(loaded_config, _create_backend(loaded_config), _find_scene_loader())
+	var created_backend: LobbyBackend = _create_backend(loaded_config)
+	setup(loaded_config, created_backend, _find_scene_loader(), _create_voice_source(created_backend))
 	if OS.is_debug_build():
 		network_conditions = NetworkConditions.from_arguments(OS.get_cmdline_args() + OS.get_cmdline_user_args())
 		if network_conditions != null:
@@ -68,6 +76,16 @@ func _create_backend(for_config: LobbyConfig) -> LobbyBackend:
 				return created_backend
 	push_error("Lobby: backend \"%s\" could not be loaded, online features are unavailable." % backend_name)
 	return LobbyBackend.new()
+
+## The voice source that goes with a backend, null when it has none.
+func _create_voice_source(for_backend: LobbyBackend) -> VoiceSource:
+	var script_path: String = VOICE_SOURCE_SCRIPTS.get(for_backend.get_backend_name(), "")
+	if script_path.is_empty() or not ResourceLoader.exists(script_path):
+		return null
+	var script: GDScript = load(script_path) as GDScript
+	if script == null or not script.can_instantiate():
+		return null
+	return script.new() as VoiceSource
 
 func _find_scene_loader() -> LobbySceneLoader:
 	var loader: LobbySceneLoader = get_node_or_null(SCENE_LOADER_PATH) as LobbySceneLoader

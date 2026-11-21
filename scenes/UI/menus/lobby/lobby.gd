@@ -1,6 +1,6 @@
 extends Control
-## Default lobby screen: members with their ready state, friends to invite, and the
-## controls of the host (visibility, kick, start).
+## Default lobby screen: members with their ready state, friends to invite, the voice
+## chat of the local player and the controls of the host (visibility, kick, start).
 
 const MEMBER_ROW_SCENE: PackedScene = preload("member_row.tscn")
 const FRIEND_ROW_SCENE: PackedScene = preload("friend_row.tscn")
@@ -9,6 +9,9 @@ const VISIBILITY_LABELS: Dictionary[LobbyTypes.Visibility, String] = {
 	LobbyTypes.Visibility.FRIENDS_ONLY: "Friends only",
 	LobbyTypes.Visibility.PUBLIC: "Public",
 }
+
+## Choices of the microphone option, in this order.
+enum Microphone { PUSH_TO_TALK, OPEN, OFF }
 
 @onready var _title_label: Label = %TitleLabel
 @onready var _members_header: Label = %MembersHeader
@@ -19,6 +22,7 @@ const VISIBILITY_LABELS: Dictionary[LobbyTypes.Visibility, String] = {
 @onready var _ready_button: Button = %ReadyButton
 @onready var _start_button: Button = %StartButton
 @onready var _visibility_option: OptionButton = %VisibilityOption
+@onready var _microphone_option: OptionButton = %MicrophoneOption
 
 var _lobby: LobbyService
 var _rows: Dictionary[int, LobbyMemberRow] = {}
@@ -50,6 +54,32 @@ func _setup_controls() -> void:
 	for visibility: LobbyTypes.Visibility in VISIBILITY_LABELS:
 		_visibility_option.add_item(VISIBILITY_LABELS[visibility], visibility)
 	_visibility_option.select(_visibility_option.get_item_index(_lobby.visibility))
+	_setup_microphone_option()
+
+func _setup_microphone_option() -> void:
+	var voice: VoiceChat = _lobby.voice
+	_microphone_option.visible = voice.is_enabled()
+	if not voice.can_talk():
+		# Voices are still heard.
+		_microphone_option.add_item("No microphone")
+		_microphone_option.disabled = true
+		return
+	_microphone_option.add_item("Mic: hold %s" % _talk_key_text(), Microphone.PUSH_TO_TALK)
+	_microphone_option.add_item("Mic: always on", Microphone.OPEN)
+	_microphone_option.add_item("Mic: off", Microphone.OFF)
+	var choice: Microphone = Microphone.PUSH_TO_TALK
+	if voice.is_microphone_muted:
+		choice = Microphone.OFF
+	elif voice.activation == LobbyTypes.VoiceActivation.OPEN_MIC:
+		choice = Microphone.OPEN
+	_microphone_option.select(_microphone_option.get_item_index(choice))
+
+## The key of the push-to-talk action, as written on the keyboard of the player.
+func _talk_key_text() -> String:
+	if InputMap.has_action(VoiceChat.TALK_ACTION):
+		for event: InputEvent in InputMap.action_get_events(VoiceChat.TALK_ACTION):
+			return event.as_text().trim_suffix(" (Physical)")
+	return "the talk key"
 
 func _refresh_title() -> void:
 	_title_label.text = _lobby.lobby_name
@@ -100,6 +130,15 @@ func _on_start_button_pressed() -> void:
 
 func _on_visibility_option_item_selected(index: int) -> void:
 	_lobby.set_visibility(_visibility_option.get_item_id(index) as LobbyTypes.Visibility)
+
+func _on_microphone_option_item_selected(index: int) -> void:
+	var choice: Microphone = _microphone_option.get_item_id(index) as Microphone
+	_lobby.voice.is_microphone_muted = choice == Microphone.OFF
+	if choice != Microphone.OFF:
+		_lobby.voice.activation = (
+			LobbyTypes.VoiceActivation.OPEN_MIC if choice == Microphone.OPEN
+			else LobbyTypes.VoiceActivation.PUSH_TO_TALK
+		)
 
 func _on_overlay_button_pressed() -> void:
 	_lobby.open_invite_overlay()

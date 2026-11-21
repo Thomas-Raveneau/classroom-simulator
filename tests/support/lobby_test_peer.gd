@@ -7,6 +7,7 @@ extends Node
 var service: LobbyService
 var backend: ENetLobbyBackend
 var loader: FakeLobbySceneLoader
+var voice_source: FakeVoiceSource
 
 ## Adds a new player under `parent`. Every player of a test must share `port`.
 ## Its connection is a perfect one unless `conditions` are given, or asked for every
@@ -24,7 +25,8 @@ static func create(
 	test_peer.backend.port = port
 	test_peer.service = LobbyService.new()
 	test_peer.service.name = "Lobby"
-	test_peer.service.setup(config, test_peer.backend, test_peer.loader)
+	test_peer.voice_source = FakeVoiceSource.new()
+	test_peer.service.setup(config, test_peer.backend, test_peer.loader, test_peer.voice_source)
 	test_peer.service.network_conditions = conditions if conditions != null else conditions_from_environment()
 	test_peer.add_child(test_peer.service)
 	return test_peer

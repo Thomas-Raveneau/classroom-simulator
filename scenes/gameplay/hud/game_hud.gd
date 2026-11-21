@@ -1,6 +1,7 @@
 extends CanvasLayer
 ## In-game display and controls: the phase of the match and its timer, the scores with
-## the latency of each player, and the buttons to go back to the lobby or leave.
+## the latency of each player and who is talking, and the buttons to go back to the
+## lobby or leave.
 ## Leaving as the host closes the lobby for everyone.
 
 const PHASE_TEXTS: Dictionary[StringName, String] = {
@@ -10,6 +11,7 @@ const PHASE_TEXTS: Dictionary[StringName, String] = {
 	MatchState.PHASE_RESULTS: "Results",
 }
 const ABSENT_COLOR: Color = Color(1, 1, 1, 0.4)
+const SPEAKING_COLOR: Color = Color(0.5, 0.8, 1)
 
 @export var match_state: MatchState
 
@@ -25,6 +27,7 @@ func _ready() -> void:
 	Lobby.member_joined.connect(_refresh_scores.unbind(1))
 	Lobby.member_left.connect(_refresh_scores.unbind(1))
 	Lobby.member_updated.connect(_refresh_scores.unbind(2))
+	Lobby.voice.speaking_changed.connect(_refresh_scores.unbind(2))
 	_refresh_phase()
 	_refresh_scores()
 
@@ -47,8 +50,11 @@ func _refresh_scores() -> void:
 		line.text = "%s   %d" % [match_state.get_player_name(user_id), match_state.get_score(user_id)]
 		if member == null:
 			line.modulate = ABSENT_COLOR
-		elif member.ping > 0:
-			line.text += "   %d ms" % member.ping
+		else:
+			if member.ping > 0:
+				line.text += "   %d ms" % member.ping
+			if Lobby.voice.is_speaking(member.peer_id):
+				line.modulate = SPEAKING_COLOR
 		line.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		_scores.add_child(line)
 

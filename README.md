@@ -6,7 +6,7 @@ Le début d'un jeu multijoueur Godot 4.7 : un lobby Steam complet, les briques r
 
 | Dossier | Contenu |
 |---|---|
-| `network/` | Le code réseau : le lobby (`lobby/`), les briques réseau de la partie (`gameplay/`) et la simulation de mauvaise connexion (`debug/`). Voir [network/README.md](network/README.md). |
+| `network/` | Le code réseau : le lobby (`lobby/`), les briques réseau de la partie (`gameplay/`), le chat vocal (`voice/`) et la simulation de mauvaise connexion (`debug/`). Voir [network/README.md](network/README.md). |
 | `scenes/` | Les scènes du jeu et leurs scripts : menus (`UI/`), personnage, apparition des joueurs, manche de collecte et HUD (`gameplay/`), maps (`maps/`), chargement des scènes (`managers/`). |
 | `config/` | Les réglages, dont `lobby_config.tres`. |
 | `assets/` | Textures et icônes. |

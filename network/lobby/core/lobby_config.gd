@@ -44,6 +44,16 @@ const MENUS_DIR: String = "res://scenes/UI/menus/"
 ## paused in the debugger, is dropped after this time. It can then rejoin.
 @export_range(0.0, 60.0) var connection_timeout: float = 15.0
 
+@export_group("Voice chat")
+## Voice chat between the members of a lobby, in the lobby and in the game.
+@export var voice_enabled: bool = true
+## EVERYONE: everyone hears everyone. PROXIMITY: in the game, the voice of a player
+## comes out of its character (VoiceEmitter3D) and fades with distance.
+@export var voice_range: LobbyTypes.VoiceRange = LobbyTypes.VoiceRange.EVERYONE
+## How players talk by default: holding the `voice_talk` input action, or freely.
+## Each player can change it for itself (`Lobby.voice.activation`).
+@export var voice_activation: LobbyTypes.VoiceActivation = LobbyTypes.VoiceActivation.PUSH_TO_TALK
+
 @export_group("Backend")
 ## "steam" or "enet". Overridden by the command line argument `--lobby-backend=<name>`.
 @export var default_backend: String = "steam"
