@@ -205,6 +205,35 @@ Un nœud enfant de l'objet. Le `MultiplayerSynchronizer` réplique `sync_positio
 
 Après un déplacement instantané (réapparition, téléporteur), appeler `smoother.teleport()` chez le propriétaire : les autres placent l'objet d'un coup au lieu de le faire glisser.
 
+### `NetworkAnimation` : les animations des autres joueurs
+
+Un nœud enfant de l'objet. On anime l'objet comme dans un jeu solo, mais seulement chez le joueur qui en a l'autorité ; ce nœud publie ce qui s'y joue et le rejoue chez les autres.
+
+Avec un `AnimationPlayer` (le cas du personnage du jeu) :
+
+```gdscript
+# Chez le propriétaire uniquement
+if _animation_player.assigned_animation != &"run":
+	_animation_player.play(&"run")
+```
+
+- Renseigner `animation_player` sur le nœud `NetworkAnimation`.
+- Faire répliquer `NetworkAnimation:sync_state` par le `MultiplayerSynchronizer` de l'objet, en mode « On Change ».
+- Seul le nom de l'animation voyage. Régler les fondus sur l'`AnimationPlayer` (`playback_default_blend_time`), pas dans l'appel à `play()`.
+- Une animation relancée est rejouée chez les autres. Un joueur qui arrive en cours de partie voit les animations en boucle, et la dernière pose des autres.
+
+Avec un `AnimationTree`, renseigner `animation_tree` et lister ce que le jeu pilote :
+
+| Propriété | Contenu | Exemple |
+|---|---|---|
+| `tree_parameters` | Les paramètres que le jeu écrit. Répliquer aussi `sync_parameters`, en mode « Always ». | `parameters/Move/blend_position` |
+| `state_machines` | Les machines à états dont l'état courant est suivi. | `parameters/playback` |
+| `one_shots` | Les déclenchements ponctuels, lancés par `network_animation.fire(...)` au lieu d'écrire le paramètre. | `parameters/Attack/request` |
+
+Les nombres et vecteurs de `tree_parameters` sont lissés chez les autres joueurs (`parameter_smoothing`).
+
+Limites : la vitesse de lecture et la lecture à l'envers ne sont pas transmises. Ce que reçoivent les autres joueurs est vérifié (animation ou état existant, type des valeurs), puisque cela vient d'un joueur.
+
 ### Réapparition
 
 `PlayerSpawner` fait apparaître un personnage par joueur et gère la réapparition. Un personnage qui tombe sous `fall_limit` demande l'action `respawn` ; l'hôte choisit un point d'apparition et demande au propriétaire de s'y téléporter. Côté hôte, `player_spawner.respawn(peer_id)` fait la même chose à la demande du jeu.
@@ -254,7 +283,7 @@ tests/e2e/run.sh                                               # le vrai jeu, à
 
 Les tests unitaires font tourner plusieurs joueurs dans le même processus, sur une vraie connexion ENet. `tests/support/game_test.gd` sert de base à un test qui a besoin d'une partie en cours.
 
-Le script `run.sh` lance trois instances du jeu : un hôte, un client et un joueur qui arrive en cours de partie. Ils vérifient les positions, la réapparition, le ramassage des pièces, les scores, une coupure de connexion suivie d'un retour, la fin de manche, l'exclusion et le départ de l'hôte.
+Le script `run.sh` lance trois instances du jeu : un hôte, un client et un joueur qui arrive en cours de partie. Ils vérifient les positions, les animations, la réapparition, le ramassage des pièces, les scores, une coupure de connexion suivie d'un retour, la fin de manche, l'exclusion et le départ de l'hôte.
 
 Les deux se rejouent sur une mauvaise connexion simulée, avec des variables d'environnement :
 

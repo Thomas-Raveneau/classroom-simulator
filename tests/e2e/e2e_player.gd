@@ -111,7 +111,7 @@ func _play_game() -> void:
 		_match_state().start_phase(MatchState.PHASE_PLAYING, 0.5)
 	await _until(func() -> bool: return _match_state().phase == MatchState.PHASE_RESULTS, "results are shown")
 
-## Everyone sees every character, named, where its owner put it.
+## Everyone sees every character, named, where its owner put it and animated as there.
 func _check_positions() -> void:
 	var own_player: Player = _own_player()
 	_check(own_player != null and own_player.is_multiplayer_authority(), "controls its own character")
@@ -123,6 +123,13 @@ func _check_positions() -> void:
 				var player: Player = _player_of(_member_named(player_name))
 				return player != null and absf(player.position.x - target_x) < 0.5,
 			"sees %s at its place" % player_name
+		)
+		# Only the owner of a character animates it: the others play what it publishes.
+		await _until(
+			func() -> bool:
+				var player: Player = _player_of(_member_named(player_name))
+				return player != null and _animation_of(player) == &"idle",
+			"sees %s standing still" % player_name
 		)
 
 ## Falling off the map: the host puts the character back on a spawn point.
@@ -218,6 +225,9 @@ func _player_of(member: LobbyMember) -> Player:
 			if player.name == str(member.peer_id):
 				return player as Player
 	return null
+
+func _animation_of(player: Player) -> StringName:
+	return (player.get_node("AnimationPlayer") as AnimationPlayer).assigned_animation
 
 func _member_named(member_name: String) -> LobbyMember:
 	for member: LobbyMember in Lobby.get_members():

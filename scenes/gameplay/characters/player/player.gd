@@ -1,11 +1,14 @@
 class_name Player
 extends CharacterBody3D
-## The character of a player, moved by the player who has authority over it and shown to
-## the others through the NetworkSmoother of the scene.
+## The character of a player, moved and animated by the player who has authority over
+## it, and shown to the others through the NetworkSmoother and the NetworkAnimation of
+## the scene.
 
 const SPEED: float = 15.0
 const JUMP_VELOCITY: float = 4.5
 const ROTATION_SPEED: float = 20.0
+## Horizontal speed above which the character is shown running.
+const RUN_SPEED: float = 0.5
 ## Time between two requests to respawn while the character keeps falling, in seconds.
 const RESPAWN_RETRY_DELAY: float = 1.5
 
@@ -18,6 +21,7 @@ var _respawn_asked_at: float = -INF
 @onready var _camera: Camera3D = $Camera
 @onready var _name_label: Label3D = $NameLabel
 @onready var _smoother: NetworkSmoother = $NetworkSmoother
+@onready var _animation_player: AnimationPlayer = $AnimationPlayer
 
 func _ready() -> void:
 	_camera.current = is_multiplayer_authority()
@@ -35,6 +39,7 @@ func _physics_process(delta: float) -> void:
 		return
 	_move(delta)
 	_face_movement(delta)
+	_animate()
 	_respawn_when_fallen()
 
 ## Host only. Moves the character somewhere else at once, whoever controls it: the
@@ -74,6 +79,18 @@ func _face_movement(delta: float) -> void:
 		return
 	var angle: float = wrapf(atan2(velocity.x, velocity.z) - _meshes.rotation.y, -PI, PI)
 	_meshes.rotation.y += clampf(ROTATION_SPEED * delta, 0, absf(angle)) * signf(angle)
+
+## Plays the animation of what the character is doing. Only here, on its own player:
+## the NetworkAnimation of the scene plays the same on the others.
+func _animate() -> void:
+	var animation: StringName = &"idle"
+	if not is_on_floor():
+		animation = &"jump"
+	elif Vector2(velocity.x, velocity.z).length() > RUN_SPEED:
+		animation = &"run"
+	# The assigned one: "jump" plays once and must not start again while in the air.
+	if _animation_player.assigned_animation != animation:
+		_animation_player.play(animation)
 
 ## Where the character respawns is decided by the host: it is asked through HostActions.
 func _respawn_when_fallen() -> void:
