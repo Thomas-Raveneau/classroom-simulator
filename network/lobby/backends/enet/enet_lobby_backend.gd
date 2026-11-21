@@ -26,8 +26,10 @@ func setup(_config: LobbyConfig) -> void:
 	super(_config)
 	if port == 0:
 		port = config.enet_port
-	# Unverifiable but stable for the session, which is enough for the ban list.
-	var user_id: int = randi_range(1, 1 << 30)
+	# Unverifiable but stable for the session, which is enough for the ban list. Drawn
+	# from the system: instances launched at the same instant share the seed of the
+	# engine's random numbers, and would get the same id from `randi()`.
+	var user_id: int = Crypto.new().generate_random_bytes(4).decode_u32(0) % (1 << 30) + 1
 	_identity = { "user_id": user_id, "name": _read_name_argument("Player %d" % (user_id % 10000)) }
 
 func is_available() -> bool:

@@ -6,7 +6,7 @@ Le début d'un jeu multijoueur Godot 4.7 : un lobby Steam complet, les briques r
 
 | Dossier | Contenu |
 |---|---|
-| `network/` | Le code réseau : le lobby (`lobby/`) et les briques réseau de la partie (`gameplay/`). Voir [network/README.md](network/README.md). |
+| `network/` | Le code réseau : le lobby (`lobby/`), les briques réseau de la partie (`gameplay/`) et la simulation de mauvaise connexion (`debug/`). Voir [network/README.md](network/README.md). |
 | `scenes/` | Les scènes du jeu et leurs scripts : menus (`UI/`), personnage, apparition des joueurs, manche de collecte et HUD (`gameplay/`), maps (`maps/`), chargement des scènes (`managers/`). |
 | `config/` | Les réglages, dont `lobby_config.tres`. |
 | `assets/` | Textures et icônes. |
@@ -19,12 +19,16 @@ Avec Steam ouvert, lancer le projet normalement.
 
 Sans Steam, lancer plusieurs instances avec les arguments `--lobby-backend=enet --lobby-name=<nom>` (dans l'éditeur : Débogage > Personnaliser les instances d'exécution).
 
+Pour jouer comme sur une mauvaise connexion, ajouter `--net-latency=150 --net-jitter=30 --net-loss=5`.
+
 ## Lancer les tests
 
 ```
 godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 tests/e2e/run.sh
 ```
+
+Les mêmes sur une mauvaise connexion simulée : les préfixer de `NET_LATENCY=150 NET_JITTER=30 NET_LOSS=5`.
 
 ## Démarrer un nouveau jeu à partir de ce repo
 

@@ -36,9 +36,10 @@ func test_scores_and_values_reach_every_player() -> void:
 	_state(host).add_score(client_user_id)
 	_state(host).set_score(host.service.local_member.user_id, 1)
 	_state(host).set_value("map", "forest")
-	await until(func() -> bool: return _state(client).get_score(client_user_id) == 3, "client knows its score")
+	# Sent in that order: once the last one arrived, the others did.
+	await until(func() -> bool: return _state(client).get_value("map") == "forest", "client knows the map")
+	assert_eq(_state(client).get_score(client_user_id), 3)
 	assert_eq(_state(client).get_score(host.service.local_member.user_id), 1)
-	assert_eq(_state(client).get_value("map"), "forest")
 	assert_eq(_state(client).get_ranking()[0], client_user_id, "best score first")
 	_state(host).reset_scores()
 	_state(host).set_value("map", null)

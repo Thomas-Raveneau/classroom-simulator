@@ -1,7 +1,8 @@
 class_name FakeLobbySceneLoader
 extends LobbySceneLoader
 ## Scene loader that loads no file. By default a scene is "shown" on the next frame;
-## with `manual` the test decides when with `complete()` or `fail()`.
+## with `manual` the test decides when with `complete()` or `fail()`. Called before the
+## order to load arrived (slow connection), `complete()` applies to the next one.
 ## With a `scene_factory`, the scene it builds is shown as a sibling named "Scene".
 
 var manual: bool = false
@@ -14,6 +15,7 @@ var current_path: String = ""
 ## Optional `func(path: String) -> Node` building the scene to show.
 var scene_factory: Callable
 var current_scene: Node
+var _completes_next_load: bool = false
 
 func load_scene(path: String, _confirm: Signal = Signal(), _timeout: float = 0.0) -> void:
 	requested_paths.append(path)
@@ -22,7 +24,8 @@ func load_scene(path: String, _confirm: Signal = Signal(), _timeout: float = 0.0
 	if current_scene != null:
 		current_scene.free()
 		current_scene = null
-	if not manual:
+	if not manual or _completes_next_load:
+		_completes_next_load = false
 		complete.call_deferred()
 
 func cancel() -> void:
@@ -30,6 +33,7 @@ func cancel() -> void:
 
 func complete() -> void:
 	if pending_path.is_empty():
+		_completes_next_load = manual
 		return
 	current_path = pending_path
 	pending_path = ""

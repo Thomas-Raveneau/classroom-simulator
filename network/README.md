@@ -55,6 +55,26 @@ godot --path . -- --lobby-backend=enet --lobby-name=Alice
 
 Le backend ENet n'a ni amis, ni invitations, ni vraie liste de lobbies : les boutons correspondants sont masqués. Tout le reste se comporte comme sur Steam, parce que c'est synchronisé par RPC et non par Steam.
 
+### Simuler une mauvaise connexion
+
+Sur une seule machine, la connexion est parfaite : aucun délai, aucune perte. Trois arguments donnent à une instance la connexion d'un joueur mal connecté :
+
+```
+--lobby-backend=enet --lobby-name=Alice --net-latency=150 --net-jitter=30 --net-loss=5
+```
+
+| Argument | Effet |
+|---|---|
+| `--net-latency=150` | Ajoute 150 ms à la latence de cette instance : la moitié sur ce qu'elle envoie, la moitié sur ce qu'elle reçoit. |
+| `--net-jitter=30` | Retarde chaque paquet d'une durée aléatoire, jusqu'à 30 ms. Les paquets non ordonnés se doublent. |
+| `--net-loss=5` | Perd 5 % des paquets dans chaque sens. Ce qui est envoyé en non fiable (positions, mesures de latence) disparaît ; ce qui est envoyé en fiable arrive en retard, comme après un renvoi. |
+
+La latence affichée dans le lobby et dans le tableau des scores reflète ce qui est simulé. Ces arguments ne sont lus que dans une version de débogage, et fonctionnent avec n'importe quel backend, Steam compris : la simulation enveloppe la connexion, elle ne dépend pas du transport.
+
+Depuis le code, `Lobby.network_conditions = NetworkConditions.new()` fait la même chose avant de créer ou de rejoindre un lobby. Ses valeurs (`latency_ms`, `jitter_ms`, `loss_percent`) peuvent être modifiées en cours de partie.
+
+La simulation mélange les paquets plus qu'un vrai réseau, où deux paquets envoyés à la suite prennent presque toujours le même chemin. Elle sert à trouver ce qui casse, pas à mesurer une qualité de jeu.
+
 ## Le lobby
 
 ### Créer, rejoindre, quitter
@@ -209,6 +229,7 @@ interface, jeu  →  Lobby (LobbyService)  →  LobbyBackend (Steam ou ENet)
 | `network/lobby/core/` | La façade, le registre des joueurs, le chargement synchronisé, la latence, la config, la classe de base des backends. |
 | `network/lobby/backends/` | Steam et ENet. Seul `backends/steam/` connaît Steam. |
 | `network/gameplay/` | Les briques de la partie. |
+| `network/debug/` | La simulation de mauvaise connexion. |
 | `scenes/managers/` | Le chargeur de scènes (`SceneLoader`, utilisable seul) et l'enchaînement des écrans. |
 | `scenes/UI/menus/` | Les écrans du lobby. |
 | `scenes/gameplay/` | Le personnage, l'apparition des joueurs, la manche de collecte, le HUD. |
@@ -234,6 +255,17 @@ tests/e2e/run.sh                                               # le vrai jeu, à
 Les tests unitaires font tourner plusieurs joueurs dans le même processus, sur une vraie connexion ENet. `tests/support/game_test.gd` sert de base à un test qui a besoin d'une partie en cours.
 
 Le script `run.sh` lance trois instances du jeu : un hôte, un client et un joueur qui arrive en cours de partie. Ils vérifient les positions, la réapparition, le ramassage des pièces, les scores, une coupure de connexion suivie d'un retour, la fin de manche, l'exclusion et le départ de l'hôte.
+
+Les deux se rejouent sur une mauvaise connexion simulée, avec des variables d'environnement :
+
+```
+NET_LATENCY=100 NET_JITTER=30 NET_LOSS=5 godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
+NET_LATENCY=150 NET_JITTER=30 NET_LOSS=5 tests/e2e/run.sh
+```
+
+Chaque joueur des tests reçoit alors cette connexion, et les tests attendent trois fois plus longtemps. Un test peut aussi donner une mauvaise connexion à certains joueurs seulement (`conditions` dans `game_test.gd`).
+
+Dans ce mode, un test qui exige « aucune erreur moteur » peut échouer de temps en temps : une mise à jour arrivée après un changement de scène est signalée par le moteur (voir les limites connues). Un échec qui porte sur autre chose mérite d'être regardé.
 
 Pour ne pas embarquer les tests dans le jeu exporté, ajouter `tests/*, addons/gut/*` aux filtres d'exclusion des préréglages d'export.
 
@@ -265,3 +297,4 @@ Deux points propres à Steam à surveiller pendant ces essais :
 - L'exclusion demande au joueur de partir, puis coupe sa connexion à l'hôte. Steam ne permet pas de retirer quelqu'un d'un lobby : un client modifié peut y rester inscrit, mais il n'est plus dans la partie.
 - Le déplacement d'un personnage n'est pas vérifié par l'hôte : un client modifié peut se déplacer comme il veut. Les actions de jeu, elles, sont validées.
 - Les textes de l'interface sont en anglais.
+- Avec beaucoup de latence et de pertes (essayé à 300 ms et 15 %), le moteur écrit des erreurs « Node not found » dans le journal : une mise à jour d'un personnage est arrivée chez un joueur avant le personnage lui-même, ou après sa disparition. Elle est ignorée et la suivante passe ; le jeu n'est pas affecté.

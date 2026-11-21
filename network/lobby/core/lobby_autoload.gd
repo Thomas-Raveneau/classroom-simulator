@@ -5,6 +5,8 @@ extends LobbyService
 ## - Backend: `LobbyConfig.default_backend`, or the command line argument
 ##   `--lobby-backend=<name>` ("steam" or "enet").
 ## - Scene loader: the `SceneLoader` autoload.
+## - Debug builds only: `--net-latency=<ms>`, `--net-jitter=<ms>` and `--net-loss=<%>`
+##   simulate a bad connection for this instance (see NetworkConditions).
 
 const CONFIG_PATH: String = "res://config/lobby_config.tres"
 const BACKEND_ARGUMENT: String = "--lobby-backend="
@@ -27,6 +29,10 @@ func _enter_tree() -> void:
 	super()
 	var loaded_config: LobbyConfig = _load_config()
 	setup(loaded_config, _create_backend(loaded_config), _find_scene_loader())
+	if OS.is_debug_build():
+		network_conditions = NetworkConditions.from_arguments(OS.get_cmdline_args() + OS.get_cmdline_user_args())
+		if network_conditions != null:
+			print("Lobby: simulating a bad connection (%s)." % network_conditions.describe())
 	if loaded_config.auto_navigation:
 		navigator = LobbyNavigator.new()
 		navigator.name = "Navigator"

@@ -14,6 +14,9 @@ extends Node
 
 ## Maximum time the host waits for the players to stop replicating, in seconds.
 const PAUSE_TIMEOUT: float = 1.0
+## Time the host still waits once every player said it stopped, in seconds: the last
+## updates they sent can arrive after that notice when the connection is irregular.
+const PAUSE_SETTLE: float = 0.15
 
 ## The local player starts loading `path`.
 signal load_started(path: String, target_state: LobbyTypes.State)
@@ -147,7 +150,7 @@ func _pause_done(load_id: int) -> void:
 		return
 	_pause_pending_peers.erase(multiplayer.get_remote_sender_id())
 	if _pause_pending_peers.is_empty():
-		_start_pending_load(load_id)
+		get_tree().create_timer(PAUSE_SETTLE).timeout.connect(_start_pending_load.bind(load_id))
 
 @rpc("authority", "call_remote", "reliable")
 func _load(path: String, load_id: int, target_state: LobbyTypes.State) -> void:

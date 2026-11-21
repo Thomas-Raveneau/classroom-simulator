@@ -61,8 +61,14 @@ func _play_host() -> void:
 	await _until_scene(Lobby.config.main_menu_scene)
 
 func _play_client() -> void:
-	Lobby.join(0)
-	await _until(Lobby.is_in_lobby, "joined")
+	# The three instances start together: asks again when the host was not up yet.
+	await _until(
+		func() -> bool:
+			if Lobby.state == LobbyTypes.State.NONE:
+				Lobby.join(0)
+			return Lobby.is_in_lobby(),
+		"joined"
+	)
 	await _until_scene(Lobby.config.lobby_scene)
 	_check(not Lobby.is_host(), "not host")
 	_check(Lobby.get_member(1).name == "Host", "knows the host by name")
@@ -256,4 +262,4 @@ func _reason(reason: LobbyTypes.Reason) -> String:
 	return LobbyTypes.Reason.find_key(reason)
 
 func _log(text: String) -> void:
-	print("[e2e %s] %s" % [_role, text])
+	print("[e2e %s %6.2fs] %s" % [_role, Time.get_ticks_msec() / 1000.0, text])

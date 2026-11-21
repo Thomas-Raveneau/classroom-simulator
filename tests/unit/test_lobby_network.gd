@@ -39,7 +39,7 @@ func _add_peer(config: LobbyConfig = _config) -> LobbyTestPeer:
 func _add_host() -> LobbyTestPeer:
 	var host: LobbyTestPeer = _add_peer()
 	host.service.create()
-	await wait_for_signal(host.service.created, WAIT)
+	await wait_for_signal(host.service.created, LobbyTestPeer.patience(WAIT))
 	return host
 
 ## Adds a player and waits until its attempt to join ends, successfully or not.
@@ -47,12 +47,12 @@ func _add_client(config: LobbyConfig = _config) -> LobbyTestPeer:
 	var client: LobbyTestPeer = _add_peer(config)
 	client.service.join(0)
 	await wait_until(
-		func() -> bool: return client.service.state != LobbyTypes.State.JOINING, WAIT
+		func() -> bool: return client.service.state != LobbyTypes.State.JOINING, LobbyTestPeer.patience(WAIT)
 	)
 	return client
 
 func _until(condition: Callable, text: String) -> void:
-	await wait_until(condition, WAIT)
+	await wait_until(condition, LobbyTestPeer.patience(WAIT))
 	assert_true(condition.call(), text)
 
 func _state_is(test_peer: LobbyTestPeer, state: LobbyTypes.State) -> Callable:
@@ -179,7 +179,7 @@ func test_silent_peer_is_disconnected_by_the_host() -> void:
 	raw_api.multiplayer_peer = raw_peer
 	await wait_until(
 		func() -> bool: return raw_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED,
-		WAIT
+		LobbyTestPeer.patience(WAIT)
 	)
 	assert_eq(host.service.members.size(), 1, "connected but not a member")
 	await _until(
@@ -374,8 +374,23 @@ func test_latency_of_each_member_is_published() -> void:
 		func() -> bool: return other.service.get_member(client_peer_id).ping >= 0,
 		"another client knows the latency of the client"
 	)
-	assert_lt(host.service.get_member(client_peer_id).ping, 200)
+	if LobbyTestPeer.conditions_from_environment() == null:
+		assert_lt(host.service.get_member(client_peer_id).ping, 200, "a local connection is fast")
 	assert_eq(other.service.get_member(1).ping, 0, "the host has none")
+
+func test_simulated_bad_connection_shows_in_the_latency() -> void:
+	var host: LobbyTestPeer = await _add_host()
+	var conditions: NetworkConditions = NetworkConditions.new()
+	conditions.latency_ms = 200
+	var slow: LobbyTestPeer = LobbyTestPeer.create(self, _config, _port, conditions)
+	_peers.append(slow)
+	slow.service.join(0)
+	await _until(_state_is(slow, LobbyTypes.State.IN_LOBBY), "joined through the simulated connection")
+	var slow_peer_id: int = slow.service.local_member.peer_id
+	await _until(
+		func() -> bool: return host.service.get_member(slow_peer_id).ping >= 150,
+		"the host measures the latency that was added"
+	)
 
 func test_member_cannot_write_a_host_only_key() -> void:
 	var host: LobbyTestPeer = await _add_host()

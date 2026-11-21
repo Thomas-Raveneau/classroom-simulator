@@ -10,6 +10,8 @@ const WAIT: float = 3.0
 var config: LobbyConfig
 var port: int
 var peers: Array[LobbyTestPeer]
+## Bad connection given to the players added from now on. A perfect one when null.
+var conditions: NetworkConditions
 
 func before_each() -> void:
 	config = LobbyConfig.new()
@@ -21,6 +23,7 @@ func before_each() -> void:
 	config.allow_join_in_progress = true
 	port = LobbyTestPeer.pick_port()
 	peers = []
+	conditions = null
 
 func after_each() -> void:
 	for test_peer: LobbyTestPeer in peers:
@@ -28,7 +31,7 @@ func after_each() -> void:
 	peers.clear()
 
 func add_peer() -> LobbyTestPeer:
-	var test_peer: LobbyTestPeer = LobbyTestPeer.create(self, config, port)
+	var test_peer: LobbyTestPeer = LobbyTestPeer.create(self, config, port, conditions)
 	test_peer.loader.scene_factory = func(path: String) -> Node:
 		return LobbyTestGameScene.new() if path == GAME_SCENE else Node.new()
 	peers.append(test_peer)
@@ -37,14 +40,14 @@ func add_peer() -> LobbyTestPeer:
 func add_host() -> LobbyTestPeer:
 	var host: LobbyTestPeer = add_peer()
 	host.service.create()
-	await wait_for_signal(host.service.created, WAIT)
+	await wait_for_signal(host.service.created, LobbyTestPeer.patience(WAIT))
 	return host
 
 ## Adds a player and waits until its attempt to join ends, successfully or not.
 func add_client() -> LobbyTestPeer:
 	var client: LobbyTestPeer = add_peer()
 	client.service.join(0)
-	await wait_until(func() -> bool: return client.service.state != LobbyTypes.State.JOINING, WAIT)
+	await wait_until(func() -> bool: return client.service.state != LobbyTypes.State.JOINING, LobbyTestPeer.patience(WAIT))
 	return client
 
 ## Starts the game and waits until every player is in it.
@@ -57,7 +60,7 @@ func scene_of(test_peer: LobbyTestPeer) -> LobbyTestGameScene:
 	return test_peer.loader.current_scene as LobbyTestGameScene
 
 func until(condition: Callable, text: String) -> void:
-	await wait_until(condition, WAIT)
+	await wait_until(condition, LobbyTestPeer.patience(WAIT))
 	assert_true(condition.call(), text)
 
 ## Ends the connection of a client as a network failure would: neither side said it was

@@ -36,13 +36,13 @@ func _add_peer() -> LobbyTestPeer:
 func _add_host() -> LobbyTestPeer:
 	var host: LobbyTestPeer = _add_peer()
 	host.service.create()
-	await wait_for_signal(host.service.created, WAIT)
+	await wait_for_signal(host.service.created, LobbyTestPeer.patience(WAIT))
 	return host
 
 func _add_client() -> LobbyTestPeer:
 	var client: LobbyTestPeer = _add_peer()
 	client.service.join(0)
-	await wait_until(func() -> bool: return client.service.state != LobbyTypes.State.JOINING, WAIT)
+	await wait_until(func() -> bool: return client.service.state != LobbyTypes.State.JOINING, LobbyTestPeer.patience(WAIT))
 	return client
 
 func _scene(test_peer: LobbyTestPeer) -> LobbyTestGameScene:
@@ -52,7 +52,7 @@ func _pawn_count(test_peer: LobbyTestPeer) -> int:
 	return _scene(test_peer).pawns.get_child_count() if _scene(test_peer) != null else 0
 
 func _until(condition: Callable, text: String) -> void:
-	await wait_until(condition, WAIT)
+	await wait_until(condition, LobbyTestPeer.patience(WAIT))
 	assert_true(condition.call(), text)
 
 func _pawn_value_is(viewer: LobbyTestPeer, owner_peer: LobbyTestPeer, value: int) -> Callable:

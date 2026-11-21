@@ -83,9 +83,16 @@ var member_data_validator: Callable:
 	get: return _member_sync.data_validator
 	set(value): _member_sync.data_validator = value
 
+## Debug: makes the connection of this player behave like a bad one (latency, jitter,
+## packet loss). Set it before creating or joining a lobby; its values can be changed
+## while connected. See SimulatedNetworkPeer.
+var network_conditions: NetworkConditions
+
 var _member_sync: LobbyMemberSync
 var _scene_sync: LobbySceneSync
 var _ping: LobbyPing
+## The connection in use when `network_conditions` are simulated, null otherwise.
+var _simulated_peer: SimulatedNetworkPeer
 ## Incremented whenever a create / join attempt starts or ends: invalidates its timeout.
 var _attempt: int = 0
 ## Lobby of the game the local player was disconnected from, 0 when there is none.
@@ -409,11 +416,24 @@ func _teardown(reason: LobbyTypes.Reason) -> void:
 	lobby_id = 0
 	# The connection goes first: the resets below make the game scene stop replicating,
 	# which must not be attempted on a connection that is already dead.
+	if _simulated_peer != null:
+		# What was sent just before leaving (a goodbye) must not stay in the simulation.
+		_simulated_peer.flush()
+		_simulated_peer = null
 	backend.leave()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	_scene_sync.reset()
 	_member_sync.reset()
 	_set_state(LobbyTypes.State.NONE)
+
+## Makes the connection of the backend the one of the multiplayer API.
+func _install_connection() -> void:
+	var peer: MultiplayerPeer = backend.get_peer()
+	_simulated_peer = null
+	if network_conditions != null and peer != null:
+		_simulated_peer = SimulatedNetworkPeer.new(peer, network_conditions)
+		peer = _simulated_peer
+	multiplayer.multiplayer_peer = peer
 
 func _check_admission(_user_id: int, has_seat: bool) -> LobbyTypes.Reason:
 	# A player coming back to its seat is always let in.
@@ -432,7 +452,7 @@ func _on_backend_lobby_created(new_lobby_id: int) -> void:
 	_attempt += 1
 	_rejoin_lobby_id = 0
 	lobby_id = new_lobby_id
-	multiplayer.multiplayer_peer = backend.get_peer()
+	_install_connection()
 	_member_sync.start_host()
 	var new_lobby_name: String = "%s's lobby" % local_member.name
 	set_lobby_data(LOBBY_NAME_KEY, new_lobby_name)
@@ -452,7 +472,7 @@ func _on_backend_lobby_joined(joined_lobby_id: int) -> void:
 		return
 	lobby_id = joined_lobby_id
 	# The member registry introduces the local player to the host once connected.
-	multiplayer.multiplayer_peer = backend.get_peer()
+	_install_connection()
 
 func _on_backend_lobby_join_failed(reason: LobbyTypes.Reason) -> void:
 	if state == LobbyTypes.State.JOINING:
