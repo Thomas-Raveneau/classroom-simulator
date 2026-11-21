@@ -7,10 +7,13 @@ extends Node
 ## it finished a step, and waits for everyone's flag before the next one.
 
 const ROLE_ARGUMENT: String = "--e2e-role="
-const TIMEOUT: float = 20.0
 ## Where each role moves its own character, to check that positions are synchronized.
 const TARGET_X: Dictionary[String, float] = { "host": 7.0, "client": -7.0, "late": 3.0 }
-const EXPECTED_PLAYERS: int = 3
+
+## How long a step may take before the run fails, and how many players play.
+## Variables rather than constants so that steam_player.gd can change them.
+var timeout: float = 20.0
+var expected_players: int = 3
 
 var _role: String = ""
 
@@ -53,7 +56,7 @@ func _play_host() -> void:
 	await _until_scene(Lobby.config.lobby_scene)
 	await _until(func() -> bool: return Lobby.state == LobbyTypes.State.IN_LOBBY, "everyone is back in the lobby")
 	_check(Lobby.can_start_game(), "can start again")
-	_check(Lobby.members.size() == EXPECTED_PLAYERS, "everyone came back")
+	_check(Lobby.members.size() == expected_players, "everyone came back")
 	Lobby.kick(_member_named("Late"))
 	await _until(func() -> bool: return Lobby.members.size() == 2, "late player kicked")
 	await get_tree().create_timer(1.0).timeout
@@ -99,7 +102,7 @@ func _play_late() -> void:
 
 func _play_game() -> void:
 	await _until(func() -> bool: return Lobby.state == LobbyTypes.State.IN_GAME, "in game")
-	await _until(func() -> bool: return _players().size() == EXPECTED_PLAYERS, "every character is spawned")
+	await _until(func() -> bool: return _players().size() == expected_players, "every character is spawned")
 	await _check_positions()
 	await _everyone_did("positions")
 	await _fall_and_respawn()
@@ -152,7 +155,7 @@ func _collect_a_coin() -> void:
 	)
 	await _until(
 		func() -> bool:
-			return Lobby.members.size() == EXPECTED_PLAYERS and Lobby.get_members().all(
+			return Lobby.members.size() == expected_players and Lobby.get_members().all(
 				func(member: LobbyMember) -> bool: return _match_state().get_score(member.user_id) > 0
 			),
 		"sees a score for everyone"
@@ -167,7 +170,7 @@ func _lose_and_recover_the_client() -> void:
 		"host":
 			await _until(
 				func() -> bool:
-					return Lobby.members.size() == EXPECTED_PLAYERS and Lobby.get_members().all(
+					return Lobby.members.size() == expected_players and Lobby.get_members().all(
 						func(member: LobbyMember) -> bool: return member.data.get("e2e_ready_for_cut") == true
 					),
 				"everyone is ready for the cut"
@@ -176,7 +179,7 @@ func _lose_and_recover_the_client() -> void:
 			Lobby._member_sync.drop(_member_named("Client").peer_id)
 			_check(Lobby.get_absent_members().size() == 1, "keeps the seat of the client")
 			await _until(
-				func() -> bool: return Lobby.get_absent_members().is_empty() and Lobby.members.size() == EXPECTED_PLAYERS,
+				func() -> bool: return Lobby.get_absent_members().is_empty() and Lobby.members.size() == expected_players,
 				"the client took its seat back"
 			)
 		"client":
@@ -189,7 +192,7 @@ func _lose_and_recover_the_client() -> void:
 			await _until(func() -> bool: return _own_player() != null, "has a character again")
 			_check(Lobby.local_member.data.get("e2e_coins") == true, "member data is restored")
 			await _until(func() -> bool: return _match_state().get_score(own_user_id) > 0, "kept its score")
-	await _until(func() -> bool: return _players().size() == EXPECTED_PLAYERS, "every character is there again")
+	await _until(func() -> bool: return _players().size() == expected_players, "every character is there again")
 
 ## Tells the others this step is done, and waits until they all are.
 func _everyone_did(step: String) -> void:
@@ -197,7 +200,7 @@ func _everyone_did(step: String) -> void:
 	Lobby.set_member_data(key, true)
 	await _until(
 		func() -> bool:
-			return Lobby.members.size() == EXPECTED_PLAYERS and Lobby.get_members().all(
+			return Lobby.members.size() == expected_players and Lobby.get_members().all(
 				func(member: LobbyMember) -> bool: return member.data.get(key) == true
 			),
 		"everyone finished: %s" % step
@@ -246,7 +249,7 @@ func _until_scene(path: String) -> void:
 func _until(condition: Callable, what: String) -> void:
 	var elapsed: float = 0.0
 	while not condition.call():
-		if elapsed > TIMEOUT:
+		if elapsed > timeout:
 			for player: Node in _players():
 				_log("  %s is at %s" % [player.name, (player as Player).position])
 			_fail("timeout waiting for: %s" % what)

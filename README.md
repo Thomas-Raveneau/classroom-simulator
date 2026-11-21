@@ -28,6 +28,8 @@ godot --headless --path . -s addons/gut/gut_cmdln.gd -gexit
 tests/e2e/run.sh
 ```
 
+Sur Steam, à deux machines : voir « Tests » dans [network/README.md](network/README.md).
+
 Les mêmes sur une mauvaise connexion simulée : les préfixer de `NET_LATENCY=150 NET_JITTER=30 NET_LOSS=5`.
 
 ## Démarrer un nouveau jeu à partir de ce repo
@@ -36,4 +38,4 @@ Les mêmes sur une mauvaise connexion simulée : les préfixer de `NET_LATENCY=1
 2. Dans `project.godot`, changer le nom du projet (`config/name`).
 3. Dans `config/lobby_config.tres`, changer `game_key` et `steam_app_id`.
 
-Le backend Steam n'a pas encore été testé en conditions réelles : dérouler la liste « À vérifier sur Steam » de [network/README.md](network/README.md) avec deux comptes.
+Le backend Steam a été testé à deux machines pour le parcours principal (lobby, partie, exclusion, départ de l'hôte). Les invitations, la visibilité des lobbies, la reconnexion et le chat vocal restent à vérifier : voir la liste « À vérifier sur Steam » de [network/README.md](network/README.md).

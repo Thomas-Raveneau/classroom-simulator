@@ -335,27 +335,44 @@ Dans ce mode, un test qui exige « aucune erreur moteur » peut échouer de temp
 
 Le chat vocal est testé avec un faux micro : la capture réelle (Steam ou micro de Godot) ne peut pas l'être automatiquement.
 
+### Sur Steam, à deux machines
+
+`tests/e2e/steam_player.tscn` joue le même genre de parcours sur le vrai backend Steam, à deux joueurs : une machine fait l'hôte, l'autre le client, chacune connectée à son propre compte Steam, client Steam ouvert.
+
+```
+godot --headless --path . res://tests/e2e/steam_player.tscn -- --e2e-role=host
+godot --headless --path . res://tests/e2e/steam_player.tscn -- --e2e-role=client
+```
+
+L'hôte crée un lobby public et affiche son identifiant ; le client le trouve dans la liste (ou le rejoint directement avec `--e2e-lobby=<id>`) et l'attend jusqu'à 3 minutes. Ils vérifient les noms Steam, la latence, les positions, les animations, la réapparition, le ramassage des pièces, les scores et le retour au lobby. La fin se choisit avec `--e2e-ending=`, à passer aux deux machines : `host_left` (par défaut, l'hôte quitte) ou `kick` (l'hôte exclut le client, qui est refusé quand il revient).
+
+Les invitations, l'overlay Steam, le chat vocal et une vraie coupure réseau ne se pilotent pas depuis le code : ils restent dans la liste « À vérifier sur Steam ».
+
 Pour ne pas embarquer les tests dans le jeu exporté, ajouter `tests/*, addons/gut/*` aux filtres d'exclusion des préréglages d'export.
 
 ## À vérifier sur Steam
 
-Le backend Steam a été écrit sans pouvoir être exécuté : il compile avec GodotSteam 4.24, mais **aucun parcours Steam n'a encore été testé**. Seule exception : la forme des réponses des fonctions vocales de Steam a été vérifiée, sans enregistrement. À faire avec deux comptes, sur deux machines ou une machine et une VM :
+Le backend Steam compile avec GodotSteam 4.24. Les cases cochées ont été vérifiées le 21/11/2026 avec deux comptes sur deux machines (macOS et Windows 11), par `tests/e2e/steam_player.tscn` (voir « Tests »). Le reste est à faire à la main, avec deux comptes, sur deux machines ou une machine et une VM :
 
-- [ ] Créer un lobby, le voir chez un ami dans « Join lobby », le rejoindre.
-- [ ] Les noms des joueurs et leur latence s'affichent chez tout le monde.
+- [x] Créer un lobby public, le trouver dans la liste des lobbies, le rejoindre.
+- [ ] Créer un lobby réservé aux amis, le voir chez un ami dans « Join lobby », le rejoindre.
+- [x] Les noms des joueurs et leur latence s'affichent chez tout le monde.
 - [ ] Inviter depuis la liste d'amis du lobby et depuis le bouton « Invite... ».
 - [ ] Accepter une invitation depuis le jeu, puis depuis l'overlay Steam.
 - [ ] Jeu fermé, accepter une invitation : le jeu se lance et arrive dans le lobby.
 - [ ] Lobby public : visible par un compte qui n'est pas ami. Lobby privé : invisible.
 - [ ] Lobby plein, lobby d'une autre `protocol_version` : refus avec le bon message.
-- [ ] Lancer la partie : personnages visibles et fluides, pièces, scores, résultats, retour au lobby.
-- [ ] Exclure un joueur : il revient au menu avec le message, et ne peut pas revenir.
-- [ ] L'hôte quitte : les clients reviennent au menu avec « The host left the lobby ».
+- [x] Lancer la partie : personnages visibles et à leur place, réapparition, pièces, scores, résultats, retour au lobby.
+- [ ] Déplacements et animations fluides, à juger à l'œil (le test tourne sans affichage).
+- [x] Exclure un joueur : il revient au menu avec le message, et ne peut pas revenir.
+- [x] L'hôte quitte : les clients reviennent au menu avec « The host left the lobby ».
 - [ ] Rejoindre une partie en cours, avec `allow_join_in_progress` activé puis désactivé.
 - [ ] Couper le réseau d'un client en pleine partie, puis « Rejoin game » : il retrouve son score.
 - [ ] Un client quitte volontairement en pleine partie : sa place n'est pas gardée chez l'hôte.
 - [ ] Chat vocal : se parler dans le lobby et en partie, en maintenant V puis en micro ouvert ; « Talking » s'affiche chez les autres.
 - [ ] Chat vocal : couper son micro, couper le son d'un joueur, et avec `voice_range = PROXIMITY`, la voix s'atténue en s'éloignant.
+
+Pendant l'exclusion, ou à la fermeture du jeu, le client Windows a écrit deux fois `steamnetworkingsockets_internal.h (769) : !IsLocked()` (une assertion du SDK Steam). Le parcours n'en a pas souffert ; l'origine n'a pas été cherchée.
 
 Deux points propres à Steam à surveiller pendant ces essais :
 - Le message d'un départ volontaire part juste avant la fermeture de la connexion. S'il n'arrive pas, la place du joueur est gardée pendant `reconnect_grace` : sans gravité, mais à constater.
