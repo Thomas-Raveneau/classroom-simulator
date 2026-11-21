@@ -309,7 +309,7 @@ Principes :
 
 ### Écrire un autre backend
 
-Hériter de `LobbyBackend`, implémenter `create`, `join`, `leave`, `get_peer`, `get_local_identity` et `resolve_identity`, puis l'ajouter à `BACKEND_SCRIPTS` dans `lobby_autoload.gd`. `backends/enet/enet_lobby_backend.gd` est l'exemple le plus court. Un backend répond toujours par signal, jamais dans l'appel lui-même.
+Hériter de `LobbyBackend`, implémenter ses fonctions marquées `@abstract` (l'éditeur signale celles qui manquent), puis l'ajouter à `BACKEND_SCRIPTS` dans `lobby_autoload.gd`. Les autres fonctions sont facultatives : amis, invitations, visibilité. `backends/enet/enet_lobby_backend.gd` est l'exemple le plus court. Un backend répond toujours par signal, jamais dans l'appel lui-même.
 
 ## Tests
 

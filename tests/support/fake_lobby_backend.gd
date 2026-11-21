@@ -53,6 +53,9 @@ func get_peer() -> MultiplayerPeer:
 func get_local_identity() -> Dictionary:
 	return local_identity
 
+func resolve_identity(_peer_id: int, _claim: Dictionary) -> Dictionary:
+	return {}
+
 func set_joinable(new_joinable: bool) -> void:
 	joinable = new_joinable
 

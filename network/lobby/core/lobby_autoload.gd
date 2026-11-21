@@ -66,7 +66,7 @@ func _create_backend(for_config: LobbyConfig) -> LobbyBackend:
 			"Lobby: backend \"%s\" needs the GodotSteam extension (addons/godotsteam), which is not installed. Online features are unavailable."
 			% backend_name
 		)
-		return LobbyBackend.new()
+		return UnavailableLobbyBackend.new()
 	var script_path: String = BACKEND_SCRIPTS.get(backend_name, "")
 	if not script_path.is_empty() and ResourceLoader.exists(script_path):
 		var script: GDScript = load(script_path) as GDScript
@@ -75,7 +75,7 @@ func _create_backend(for_config: LobbyConfig) -> LobbyBackend:
 			if created_backend != null:
 				return created_backend
 	push_error("Lobby: backend \"%s\" could not be loaded, online features are unavailable." % backend_name)
-	return LobbyBackend.new()
+	return UnavailableLobbyBackend.new()
 
 ## The voice source that goes with a backend, null when it has none.
 func _create_voice_source(for_backend: LobbyBackend) -> VoiceSource:

@@ -1,7 +1,10 @@
-class_name LobbyBackend
+@abstract class_name LobbyBackend
 extends Node
 ## Base class of a lobby backend: the service that provides lobbies, identities and the
 ## network transport (Steam, ENet...).
+##
+## A backend must implement the functions marked `@abstract`. The others are optional:
+## they do nothing by default, for what a backend cannot do (friends, invites...).
 ##
 ## A backend never references the lobby service nor the UI. It reports through signals,
 ## always asynchronously: never emit from inside the method that triggered the operation.
@@ -36,38 +39,33 @@ func setup(_config: LobbyConfig) -> void:
 	config = _config
 
 ## False when the backend cannot work (e.g. Steam is not running).
-## The base class is the "no backend" backend: it is never available.
-func is_available() -> bool:
-	return false
+@abstract func is_available() -> bool
 
 ## Human readable name, for logs and debug displays.
-func get_backend_name() -> String:
-	return "none"
+@abstract func get_backend_name() -> String
 
-func create(_visibility: LobbyTypes.Visibility) -> void:
-	_emit_deferred(lobby_create_failed, LobbyTypes.Reason.BACKEND_UNAVAILABLE)
+## Answers with `lobby_created` or `lobby_create_failed`.
+@abstract func create(visibility: LobbyTypes.Visibility) -> void
 
-func join(_lobby_id: int) -> void:
-	_emit_deferred(lobby_join_failed, LobbyTypes.Reason.BACKEND_UNAVAILABLE)
+## Answers with `lobby_joined` or `lobby_join_failed`.
+@abstract func join(lobby_id: int) -> void
 
 ## Leaves the backend lobby and closes the transport. Must be safe to call at any time.
-func leave() -> void:
-	pass
+@abstract func leave() -> void
 
 ## The transport of the current lobby, null when there is none.
-func get_peer() -> MultiplayerPeer:
-	return null
+@abstract func get_peer() -> MultiplayerPeer
 
 ## Identity of the local user: { "user_id": int, "name": String }.
-func get_local_identity() -> Dictionary:
-	return { "user_id": 0, "name": "" }
+@abstract func get_local_identity() -> Dictionary
 
 ## Host only. Returns the identity of a connected peer: { "user_id": int, "name": String },
 ## or an empty dictionary when it cannot be established (the peer is then refused).
 ## `claim` is what the peer says about itself: only trust it when the backend
 ## has no way to verify identities.
-func resolve_identity(_peer_id: int, _claim: Dictionary) -> Dictionary:
-	return {}
+@abstract func resolve_identity(peer_id: int, claim: Dictionary) -> Dictionary
+
+# --- Optional ----------------------------------------------------------------------------
 
 ## Host only. Allows or forbids entering the lobby at the level of the backend, when it
 ## can refuse with an answer (a Steam lobby). Do not make the transport refuse
