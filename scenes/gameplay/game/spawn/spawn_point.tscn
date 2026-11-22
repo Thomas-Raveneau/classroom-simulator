@@ -1,0 +1,8 @@
+[gd_scene load_steps=2 format=3 uid="uid://dbgu66plcb5y"]
+
+[ext_resource type="Script" uid="uid://hcs3hve3rjgj" path="res://scenes/gameplay/game/spawn/spawn_point.gd" id="1_7q05a"]
+
+[node name="SpawnPoint" type="Node3D"]
+script = ExtResource("1_7q05a")
+
+[node name="SpawnTimer" type="Timer" parent="."]

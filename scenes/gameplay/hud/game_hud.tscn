@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scenes/gameplay/hud/game_hud.gd" id="1_hud"]
+
+[node name="GameHud" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Margin" type="MarginContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="Buttons" type="HBoxContainer" parent="Margin"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
+theme_override_constants/separation = 8
+
+[node name="BackButton" type="Button" parent="Margin/Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+focus_mode = 0
+text = "Back to lobby"
+
+[node name="LeaveButton" type="Button" parent="Margin/Buttons"]
+layout_mode = 2
+focus_mode = 0
+text = "Leave"
+
+[node name="Match" type="VBoxContainer" parent="Margin"]
+layout_mode = 2
+size_flags_horizontal = 4
+size_flags_vertical = 0
+mouse_filter = 2
+
+[node name="PhaseLabel" type="Label" parent="Margin/Match"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/outline_size = 6
+theme_override_font_sizes/font_size = 20
+text = "Phase"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="Margin/Match"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 36
+text = "0"
+horizontal_alignment = 1
+
+[node name="Scores" type="VBoxContainer" parent="Margin"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 8
+size_flags_vertical = 0
+mouse_filter = 2
+
+[connection signal="pressed" from="Margin/Buttons/BackButton" to="." method="_on_back_button_pressed"]
+[connection signal="pressed" from="Margin/Buttons/LeaveButton" to="." method="_on_leave_button_pressed"]
